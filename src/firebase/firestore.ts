@@ -54,7 +54,11 @@ export function subscribeToIsland(uid: string, callback: (island: IslandDoc) => 
 
 // --- Quests ---
 
-export function subscribeToQuests(uid: string, callback: (quests: QuestDoc[]) => void): Unsubscribe {
+export interface QuestDocWithId extends QuestDoc {
+  id: string
+}
+
+export function subscribeToQuests(uid: string, callback: (quests: QuestDocWithId[]) => void): Unsubscribe {
   const q = query(
     collection(db, 'quests'),
     where('userId', '==', uid),
@@ -62,7 +66,7 @@ export function subscribeToQuests(uid: string, callback: (quests: QuestDoc[]) =>
     orderBy('createdAt', 'desc'),
   )
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map(d => ({ ...d.data(), id: d.id } as QuestDoc & { id: string })))
+    callback(snap.docs.map(d => ({ ...d.data(), id: d.id } as QuestDocWithId)))
   })
 }
 
