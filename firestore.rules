@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read their own profile
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false; // Cloud Functions only
+    }
+
+    // Users can read their own island
+    match /islands/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false; // Cloud Functions only
+
+      // Island assets subcollection
+      match /assets/{assetId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false; // Cloud Functions only
+      }
+    }
+
+    // Users can read their own quests
+    match /quests/{questId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if false; // Cloud Functions only
+    }
+
+    // Quest events: read-only for authenticated users (filtered by userId in app)
+    match /quest_events/{eventId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if false; // Cloud Functions only
+    }
+
+    // Block everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
