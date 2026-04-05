@@ -12,6 +12,9 @@ import { ToastNotification } from './ToastNotification'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../firebase/config'
 import { getOrCreateUser, getOrCreateIsland, subscribeToQuests, subscribeToIsland } from '../firebase/firestore'
+import { playGrowthAnimation } from '../engine/GrowthAnimator'
+import { playChime, setMuted } from '../engine/AudioEngine'
+import type { GridCell } from '../engine/IslandGrid'
 
 interface Props {
   user: User
@@ -25,8 +28,11 @@ export function IslandView({ user, onSignOut }: Props) {
   const [toast, setToast] = useState<{ message: string; xp: number } | null>(null)
   const [pixiReady, setPixiReady] = useState(false)
   const [pixiError, setPixiError] = useState<string | null>(null)
+  const [soundEnabled, setSoundEnabled] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const appRef = useRef<Application | null>(null)
+  const islandContainerRef = useRef<Container | null>(null)
+  const gridRef = useRef<GridCell[]>(createGrid())
 
   // Load user data and subscribe to real-time updates
   useEffect(() => {
@@ -84,6 +90,7 @@ export function IslandView({ user, onSignOut }: Props) {
 
         const container = new Container()
         container.addChild(mapSprite)
+        islandContainerRef.current = container
 
         const s = Math.min(app.screen.width, app.screen.height) / 1024 * 0.9
         container.scale.set(s)
@@ -161,6 +168,27 @@ export function IslandView({ user, onSignOut }: Props) {
         xp: result.data.xpAwarded,
       })
       setTimeout(() => setToast(null), 3000)
+
+      // Play growth animation on the island
+      if (islandContainerRef.current) {
+        const rewardAssets: Record<string, string[]> = {
+          flower: ['flower-1', 'flower-2', 'flower-3'],
+          tree: ['tree-1', 'tree-2', 'tree-3', 'tree-4'],
+          building: ['small-house', 'stall-1', 'windmill-1'],
+        }
+        const candidates = rewardAssets[result.data.rewardType] || ['flower-1']
+        const assetKey = candidates[Math.floor(Math.random() * candidates.length)]
+
+        // Load the asset if not already loaded
+        const def = (await import('../engine/assetManifest')).getAssetDef(assetKey)
+        if (def) {
+          await Assets.load(`/assets/${def.file}`)
+          await playGrowthAnimation(islandContainerRef.current, assetKey, gridRef.current)
+        }
+      }
+
+      // Play chime
+      playChime(result.data.rewardType as any)
     } catch (e: any) {
       console.error('Quest completion failed:', e)
       // Revert optimistic update
@@ -204,11 +232,22 @@ export function IslandView({ user, onSignOut }: Props) {
 
       <StatusBar island={island} />
 
-      {/* User info + sign out */}
+      {/* User info + controls */}
       <div style={{
         position: 'absolute', top: 16, right: 16, zIndex: 10,
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
+        <button
+          onClick={() => { const next = !soundEnabled; setSoundEnabled(next); setMuted(!next) }}
+          style={{
+            background: 'rgba(0,0,0,0.4)', border: 'none', borderRadius: 12,
+            padding: '4px 10px', color: '#fff', fontSize: 14, cursor: 'pointer',
+            backdropFilter: 'blur(8px)',
+          }}
+          title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+        >
+          {soundEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07'}
+        </button>
         <span style={{
           color: '#fff', fontSize: 13, fontFamily: 'system-ui',
           background: 'rgba(0,0,0,0.4)', borderRadius: 12,
