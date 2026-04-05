@@ -1,9 +1,8 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
 import { getFunctions } from 'firebase/functions'
 
-// Replace with your Firebase project config
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-api-key',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'demo.firebaseapp.com',
@@ -15,7 +14,12 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+
+// Use the new cache API instead of deprecated enableIndexedDbPersistence
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+})
+
 export const functions = getFunctions(app, 'us-central1')
 
 // Google OAuth with GWS scopes
@@ -26,12 +30,3 @@ googleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly')
 googleProvider.addScope('https://www.googleapis.com/auth/drive.activity.readonly')
 googleProvider.addScope('https://www.googleapis.com/auth/documents.readonly')
 googleProvider.addScope('https://www.googleapis.com/auth/spreadsheets.readonly')
-
-// Enable offline persistence
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Firestore persistence unavailable: multiple tabs open')
-  } else if (err.code === 'unimplemented') {
-    console.warn('Firestore persistence not supported in this browser')
-  }
-})

@@ -3,37 +3,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read their own profile
+    // Users can read and create their own profile
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if false; // Cloud Functions only
+      allow read, create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // Secrets subcollection: Cloud Functions only (Admin SDK bypasses rules)
+      match /secrets/{doc} {
+        allow read, write: if false;
+      }
     }
 
-    // Users can read their own island
+    // Users can read and create their own island
     match /islands/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if false; // Cloud Functions only
+      allow read, create: if request.auth != null && request.auth.uid == userId;
+      // Updates come from Cloud Functions (Admin SDK bypasses rules)
+      // But allow client to read
+      allow update: if false;
 
-      // Island assets subcollection
       match /assets/{assetId} {
         allow read: if request.auth != null && request.auth.uid == userId;
-        allow write: if false; // Cloud Functions only
+        allow write: if false;
       }
     }
 
     // Users can read their own quests
     match /quests/{questId} {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow write: if false; // Cloud Functions only
+      allow write: if false;
     }
 
-    // Quest events: read-only for authenticated users (filtered by userId in app)
+    // Quest events: readable by owner
     match /quest_events/{eventId} {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow write: if false; // Cloud Functions only
+      allow write: if false;
     }
 
-    // Block everything else
+    // Calendar channel mapping: Cloud Functions only
+    match /calendar_channels/{channelId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
