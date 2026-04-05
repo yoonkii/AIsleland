@@ -11,8 +11,13 @@ export async function signInWithGoogle(): Promise<User> {
     try {
       const storeToken = httpsCallable(functions, 'storeUserToken')
       await storeToken({ accessToken: credential.accessToken })
+
+      // Set up Gmail push notifications
+      const setupWatch = httpsCallable(functions, 'setupGmailWatch')
+      await setupWatch({})
+      console.log('Gmail push notifications enabled')
     } catch (e) {
-      console.warn('Failed to store OAuth token (functions may not be deployed yet):', e)
+      console.warn('Post-login setup failed (functions may not be deployed yet):', e)
     }
   }
 
