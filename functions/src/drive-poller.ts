@@ -1,28 +1,104 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import * as admin from 'firebase-admin'
+import { queryDriveActivity } from './gws'
 import { generateQuest, makeIdempotencyKey } from './quest-generator'
+import { getOAuthToken } from './token-store'
 
 const db = admin.firestore()
 
-// Poll Drive Activity API every 5 minutes for Docs/Sheets/Slides changes
+// Poll Drive Activity API every 5 minutes using gws CLI
+// Detects Docs, Sheets, Slides edits and creates quests
 export const pollDriveActivity = onSchedule(
   { schedule: 'every 5 minutes', region: 'us-central1' },
   async () => {
-    // In production: iterate over all users with active sessions,
-    // call Drive Activity API with their OAuth tokens, and create quests
-    // for detected edits.
-    //
-    // For MVP, this is a placeholder. The full implementation will:
-    // 1. Query users who were active in the last hour
-    // 2. For each user, get their OAuth token from Secret Manager
-    // 3. Call driveactivity.activity.query with the token
-    // 4. Filter for doc/sheet/slide edit actions
-    // 5. Generate quests for new activity (with idempotency)
-    //
-    // Example gws CLI usage in Cloud Functions:
-    // const { execSync } = require('child_process')
-    // const result = execSync('gws driveactivity query --format json', { env: { ...process.env, GWS_TOKEN: token } })
+    // Get all users active in the last hour
+    const activeUsers = await db
+      .collection('users')
+      .where('lastActive', '>', Date.now() - 60 * 60 * 1000)
+      .get()
 
-    console.log('Drive activity poll: placeholder (implement with gws CLI)')
+    for (const userDoc of activeUsers.docs) {
+      const userId = userDoc.id
+      const token = await getOAuthToken(userId)
+      if (!token) continue
+
+      try {
+        // Use gws CLI to query recent drive activity
+        const result = queryDriveActivity(token, 10)
+        const activities = result?.activities || []
+
+        for (const activity of activities) {
+          const action = activity?.primaryActionDetail
+          if (!action) continue
+
+          // Detect edit actions
+          const isEdit = action.edit || action.create
+          if (!isEdit) continue
+
+          // Get the target document info
+          const target = activity?.targets?.[0]?.driveItem
+          if (!target) continue
+
+          const title = target.title || 'a document'
+          const mimeType = target.mimeType || ''
+
+          // Determine source type from MIME type
+          let source: 'docs' | 'sheets' | 'slides' = 'docs'
+          if (mimeType.includes('spreadsheet')) source = 'sheets'
+          else if (mimeType.includes('presentation')) source = 'slides'
+
+          // Idempotency check
+          const eventId = `${target.name || ''}-${activity.timestamp || Date.now()}`
+          const idempotencyKey = makeIdempotencyKey(source, eventId)
+
+          const existing = await db
+            .collection('quests')
+            .where('sourceEventId', '==', idempotencyKey)
+            .limit(1)
+            .get()
+
+          if (!existing.empty) continue
+
+          // Rate limit per source
+          const recent = await db
+            .collection('quests')
+            .where('userId', '==', userId)
+            .where('source', '==', source)
+            .where('createdAt', '>', Date.now() - 5 * 60 * 1000)
+            .limit(1)
+            .get()
+
+          if (!recent.empty) continue
+
+          // Generate quest
+          const quest = generateQuest(source, { title })
+
+          const questRef = await db.collection('quests').add({
+            userId,
+            source: quest.source,
+            title: quest.title,
+            difficulty: quest.difficulty,
+            xpReward: quest.xpReward,
+            rewardType: quest.rewardType,
+            status: 'active',
+            createdAt: Date.now(),
+            completedAt: null,
+            verificationMethod: 'auto',
+            sourceEventId: idempotencyKey,
+          })
+
+          await db.collection('quest_events').add({
+            userId,
+            questId: questRef.id,
+            type: 'created',
+            timestamp: Date.now(),
+          })
+
+          console.log(`Created ${source} quest for user ${userId}: ${quest.title}`)
+        }
+      } catch (err) {
+        console.error(`Drive activity poll failed for user ${userId}:`, err)
+      }
+    }
   }
 )

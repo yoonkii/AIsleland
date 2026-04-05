@@ -9,7 +9,9 @@ import type { Quest } from '../game/QuestManager'
 import { StatusBar } from './StatusBar'
 import { QuestDrawer } from './QuestDrawer'
 import { ToastNotification } from './ToastNotification'
-import { getOrCreateUser, getOrCreateIsland, subscribeToQuests } from '../firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
+import { functions } from '../firebase/config'
+import { getOrCreateUser, getOrCreateIsland, subscribeToQuests, subscribeToIsland } from '../firebase/firestore'
 
 interface Props {
   user: User
@@ -26,10 +28,13 @@ export function IslandView({ user, onSignOut }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const appRef = useRef<Application | null>(null)
 
-  // Load user island from Firestore
+  // Load user data and subscribe to real-time updates
   useEffect(() => {
     getOrCreateUser(user.uid, user.email || '', user.displayName || '')
-    getOrCreateIsland(user.uid).then((doc) => {
+    getOrCreateIsland(user.uid)
+
+    // Subscribe to island state changes (XP, level, assets updated by Cloud Functions)
+    const unsubIsland = subscribeToIsland(user.uid, (doc) => {
       setIsland(prev => ({
         ...prev,
         level: doc.level,
@@ -42,7 +47,8 @@ export function IslandView({ user, onSignOut }: Props) {
       }))
     })
 
-    return subscribeToQuests(user.uid, (firestoreQuests) => {
+    // Subscribe to active quests
+    const unsubQuests = subscribeToQuests(user.uid, (firestoreQuests) => {
       if (firestoreQuests.length > 0) {
         setQuests(firestoreQuests.map(q => ({
           ...q,
@@ -50,6 +56,8 @@ export function IslandView({ user, onSignOut }: Props) {
         })))
       }
     })
+
+    return () => { unsubIsland(); unsubQuests() }
   }, [user.uid])
 
   // Initialize PixiJS
@@ -128,35 +136,40 @@ export function IslandView({ user, onSignOut }: Props) {
     }
   }, [])
 
-  const handleComplete = (questId: string) => {
+  const handleComplete = async (questId: string) => {
     const quest = quests.find(q => q.id === questId)
     if (!quest || quest.status !== 'active') return
 
+    // Optimistic UI: mark as completed locally
     setQuests(prev => prev.map(q =>
       q.id === questId ? { ...q, status: 'completed' as const, completedAt: Date.now() } : q
     ))
 
-    setIsland(prev => {
-      const newXp = prev.xp + quest.xpReward
-      let level = prev.level
-      const thresholds = [0, 60, 140, 240, 360, 520, 720, 960, 1240, 1600]
-      while (level < 10 && newXp >= thresholds[level]) level++
-      return {
-        ...prev, xp: newXp, level,
-        xpToNextLevel: thresholds[level] ?? 99999,
-        streakCount: prev.streakCount + 1,
-        lastQuestCompletedAt: Date.now(),
-      }
-    })
+    try {
+      // Call Cloud Function to complete quest server-side (awards XP, places asset)
+      const completeQuestFn = httpsCallable<{ questId: string }, { xpAwarded: number; rewardType: string }>(functions, 'completeQuest')
+      const result = await completeQuestFn({ questId })
 
-    const msgs: Record<string, string> = {
-      flower: 'A flower bloomed on your island!',
-      tree: 'A new tree is growing!',
-      building: 'Your village is expanding!',
-      character_chance: 'Something rustles in the bushes...',
+      const msgs: Record<string, string> = {
+        flower: 'A flower bloomed on your island!',
+        tree: 'A new tree is growing!',
+        building: 'Your village is expanding!',
+        character_chance: 'Something rustles in the bushes...',
+      }
+      setToast({
+        message: msgs[result.data.rewardType] || 'Your island grew!',
+        xp: result.data.xpAwarded,
+      })
+      setTimeout(() => setToast(null), 3000)
+    } catch (e: any) {
+      console.error('Quest completion failed:', e)
+      // Revert optimistic update
+      setQuests(prev => prev.map(q =>
+        q.id === questId ? { ...q, status: 'active' as const, completedAt: null } : q
+      ))
+      setToast({ message: e?.message || 'Failed to complete quest', xp: 0 })
+      setTimeout(() => setToast(null), 3000)
     }
-    setToast({ message: msgs[quest.rewardType] || 'Your island grew!', xp: quest.xpReward })
-    setTimeout(() => setToast(null), 3000)
   }
 
   return (
