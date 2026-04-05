@@ -9,7 +9,7 @@ const db = admin.firestore()
 // Gmail Pub/Sub push notification handler
 // When a user's Gmail changes, Google sends a POST to this endpoint
 export const onGmailPush = onRequest(
-  { minInstances: 1, region: 'us-central1' },
+  { region: 'us-central1' },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).send('Method not allowed')
