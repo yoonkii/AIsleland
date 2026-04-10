@@ -1,5 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Nunito', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Nunito', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateX(-50%) translateY(16px); }
@@ -7,13 +7,32 @@ body { font-family: 'Nunito', system-ui, sans-serif; -webkit-font-smoothing: ant
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes floatBob {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
+  50%      { transform: translateY(-8px); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-12px) rotate(2deg); }
+}
+
+@keyframes driftRight {
+  0%   { transform: translateX(-120%) translateY(0); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateX(120vw) translateY(-20px); opacity: 0; }
+}
+
+@keyframes driftLeft {
+  0%   { transform: translateX(120%) translateY(0); opacity: 0; }
+  10%  { opacity: 0.4; }
+  90%  { opacity: 0.4; }
+  100% { transform: translateX(-120vw) translateY(-15px); opacity: 0; }
 }
 
 @keyframes pulseGlow {
@@ -21,15 +40,80 @@ body { font-family: 'Nunito', system-ui, sans-serif; -webkit-font-smoothing: ant
   50%      { box-shadow: 0 0 12px 4px rgba(242, 196, 100, 0.25); }
 }
 
-.btn-primary { transition: all 0.2s ease; }
-.btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
-.btn-primary:active { transform: translateY(0); filter: brightness(0.98); }
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes heroFloat {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50%      { transform: translate(-50%, -10px) scale(1.01); }
+}
+
+/* Clouds */
+.cloud {
+  position: absolute;
+  background: rgba(255,255,255,0.5);
+  border-radius: 100px;
+  pointer-events: none;
+}
+.cloud::before, .cloud::after {
+  content: '';
+  position: absolute;
+  background: inherit;
+  border-radius: 50%;
+}
+.cloud-1 {
+  width: 120px; height: 40px;
+  top: 12%; animation: driftRight 35s linear infinite;
+}
+.cloud-1::before { width: 50px; height: 50px; top: -25px; left: 20px; }
+.cloud-1::after { width: 70px; height: 60px; top: -30px; left: 50px; }
+.cloud-2 {
+  width: 90px; height: 30px;
+  top: 22%; animation: driftLeft 42s linear infinite 8s;
+}
+.cloud-2::before { width: 40px; height: 40px; top: -20px; left: 15px; }
+.cloud-2::after { width: 55px; height: 45px; top: -22px; left: 38px; }
+.cloud-3 {
+  width: 150px; height: 45px;
+  top: 8%; animation: driftRight 50s linear infinite 15s;
+}
+.cloud-3::before { width: 60px; height: 55px; top: -28px; left: 25px; }
+.cloud-3::after { width: 80px; height: 65px; top: -32px; left: 60px; }
+
+/* Interactive */
+.btn-primary { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(126,174,212,0.4) !important; }
+.btn-primary:active { transform: translateY(0); }
 
 .btn-glass { transition: all 0.15s ease; }
-.btn-glass:hover { background: rgba(255,255,255,0.28) !important; }
+.btn-glass:hover { background: rgba(255,255,255,0.32) !important; }
 
-.quest-card { transition: all 0.15s ease; }
-.quest-card:hover { background: rgba(0,0,0,0.04) !important; border-color: rgba(0,0,0,0.1) !important; }
+.quest-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.quest-card:hover { background: rgba(0,0,0,0.04) !important; border-color: rgba(0,0,0,0.1) !important; transform: translateY(-1px); }
 
 .complete-btn { transition: all 0.15s ease; }
-.complete-btn:hover { background: rgba(140,197,162,0.25) !important; }
+.complete-btn:hover { background: rgba(140,197,162,0.3) !important; }
+
+/* Login card entrance */
+.login-card {
+  animation: scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+/* Hero island image */
+.hero-island {
+  animation: heroFloat 4s ease-in-out infinite;
+}
+
+/* Staggered fade-in for login elements */
+.fade-1 { animation: fadeIn 0.5s ease 0.4s both; }
+.fade-2 { animation: fadeIn 0.5s ease 0.55s both; }
+.fade-3 { animation: fadeIn 0.5s ease 0.7s both; }
+.fade-4 { animation: fadeIn 0.5s ease 0.85s both; }
+.fade-5 { animation: fadeIn 0.5s ease 1.0s both; }
