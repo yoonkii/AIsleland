@@ -3,6 +3,7 @@ import type { User } from 'firebase/auth'
 import { onAuthChange, signOut } from './firebase/auth'
 import { LoginScreen } from './components/LoginScreen'
 import { IslandView } from './components/IslandView'
+import { SKY_GRADIENT, FONT } from './theme'
 
 export function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -14,8 +15,8 @@ export function App() {
       <div style={{
         width: '100vw', height: '100vh', display: 'flex',
         alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #98D8C8 70%, #87CEEB 100%)',
-        color: '#fff', fontFamily: 'system-ui', fontSize: 18,
+        background: SKY_GRADIENT,
+        color: '#6B6560', fontFamily: FONT, fontSize: 18,
       }}>
         Loading...
       </div>

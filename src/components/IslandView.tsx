@@ -9,6 +9,7 @@ import type { Quest } from '../game/QuestManager'
 import { StatusBar } from './StatusBar'
 import { QuestDrawer } from './QuestDrawer'
 import { ToastNotification } from './ToastNotification'
+import { SKY_GRADIENT, FONT } from '../theme'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../firebase/config'
 import { getOrCreateUser, getOrCreateIsland, subscribeToQuests, subscribeToIsland } from '../firebase/firestore'
@@ -206,7 +207,7 @@ export function IslandView({ user, onSignOut }: Props) {
         ref={canvasRef}
         style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #98D8C8 70%, #87CEEB 100%)',
+          background: SKY_GRADIENT,
         }}
       />
 
@@ -214,7 +215,7 @@ export function IslandView({ user, onSignOut }: Props) {
         <div style={{
           position: 'absolute', inset: 0, display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontFamily: 'system-ui', fontSize: 18, zIndex: 5,
+          color: '#6B6560', fontFamily: FONT, fontSize: 18, zIndex: 5,
         }}>
           Loading your island...
         </div>
@@ -223,7 +224,7 @@ export function IslandView({ user, onSignOut }: Props) {
         <div style={{
           position: 'absolute', inset: 0, display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          color: '#ff6b6b', fontFamily: 'system-ui', fontSize: 14,
+          color: '#E07A6E', fontFamily: FONT, fontSize: 14,
           padding: 20, textAlign: 'center', zIndex: 5,
         }}>
           Failed to load island: {pixiError}
@@ -238,27 +239,29 @@ export function IslandView({ user, onSignOut }: Props) {
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <button
+          className="btn-glass"
           onClick={() => { const next = !soundEnabled; setSoundEnabled(next); setMuted(!next) }}
           style={{
-            background: 'rgba(0,0,0,0.4)', border: 'none', borderRadius: 12,
-            padding: '4px 10px', color: '#fff', fontSize: 14, cursor: 'pointer',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: 12, padding: '4px 10px', color: '#3A3632', fontSize: 14,
+            cursor: 'pointer', backdropFilter: 'blur(12px)',
           }}
           title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
         >
           {soundEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07'}
         </button>
         <span style={{
-          color: '#fff', fontSize: 13, fontFamily: 'system-ui',
-          background: 'rgba(0,0,0,0.4)', borderRadius: 12,
-          padding: '4px 10px', backdropFilter: 'blur(8px)',
+          color: '#3A3632', fontSize: 13, fontFamily: FONT,
+          background: 'rgba(255,255,255,0.18)', borderRadius: 12,
+          padding: '4px 10px', backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.3)',
         }}>
           {user.displayName || user.email}
         </span>
-        <button onClick={onSignOut} style={{
-          background: 'rgba(0,0,0,0.4)', border: 'none', borderRadius: 12,
-          padding: '4px 10px', color: '#fff', fontSize: 12, cursor: 'pointer',
-          fontFamily: 'system-ui', backdropFilter: 'blur(8px)',
+        <button className="btn-glass" onClick={onSignOut} style={{
+          background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)',
+          borderRadius: 12, padding: '4px 10px', color: '#3A3632', fontSize: 12,
+          cursor: 'pointer', fontFamily: FONT, backdropFilter: 'blur(12px)',
         }}>
           Sign out
         </button>

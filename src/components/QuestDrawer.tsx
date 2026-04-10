@@ -1,5 +1,6 @@
 import type { Quest } from '../game/QuestManager'
 import { getSourceIcon, getSourceLabel, getDifficultyLabel } from '../game/QuestManager'
+import { FONT } from '../theme'
 
 interface Props {
   quests: Quest[]
@@ -15,7 +16,7 @@ export function QuestDrawer({ quests, open, onToggle, onCompleteQuest }: Props) 
   return (
     <>
       {/* Toggle button — always visible */}
-      <button onClick={onToggle} style={styles.toggleBtn}>
+      <button className="btn-glass" onClick={onToggle} style={styles.toggleBtn}>
         <span style={styles.toggleIcon}>📋</span>
         {activeQuests.length > 0 && (
           <span style={styles.badge}>{activeQuests.length}</span>
@@ -38,7 +39,7 @@ export function QuestDrawer({ quests, open, onToggle, onCompleteQuest }: Props) 
 
         <div style={styles.questList}>
           {activeQuests.map(quest => (
-            <div key={quest.id} style={styles.questCard}>
+            <div className="quest-card" key={quest.id} style={styles.questCard}>
               <div style={{
                 ...styles.sourceLabel,
                 color: getSourceColor(quest.source),
@@ -51,6 +52,7 @@ export function QuestDrawer({ quests, open, onToggle, onCompleteQuest }: Props) 
                 <span style={styles.questDiff}>{getDifficultyLabel(quest.difficulty)}</span>
               </div>
               <button
+                className="complete-btn"
                 style={styles.completeBtn}
                 onClick={() => onCompleteQuest(quest.id)}
               >
@@ -75,12 +77,12 @@ export function QuestDrawer({ quests, open, onToggle, onCompleteQuest }: Props) 
 
 function getSourceColor(source: string): string {
   switch (source) {
-    case 'gmail': return '#EA4335'
-    case 'docs': return '#4285F4'
-    case 'sheets': return '#0F9D58'
-    case 'slides': return '#F4B400'
-    case 'calendar': return '#34A853'
-    default: return '#999'
+    case 'gmail': return '#E07A6E'
+    case 'docs': return '#7EAED4'
+    case 'sheets': return '#6BAF8D'
+    case 'slides': return '#E8B44C'
+    case 'calendar': return '#8CC5A2'
+    default: return '#A09A94'
   }
 }
 
@@ -92,15 +94,15 @@ const styles: Record<string, React.CSSProperties> = {
     width: 52,
     height: 52,
     borderRadius: '50%',
-    background: 'rgba(40, 30, 20, 0.85)',
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255,200,100,0.3)',
+    background: 'rgba(255,255,255,0.22)',
+    backdropFilter: 'blur(12px)',
+    border: '1px solid rgba(255,255,255,0.3)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 15,
-    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
   },
   toggleIcon: {
     fontSize: 22,
@@ -112,14 +114,14 @@ const styles: Record<string, React.CSSProperties> = {
     width: 20,
     height: 20,
     borderRadius: '50%',
-    background: '#EA4335',
+    background: '#E07A6E',
     color: '#fff',
     fontSize: 11,
     fontWeight: 700,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: 'system-ui, sans-serif',
+    fontFamily: FONT,
   },
   drawer: {
     position: 'absolute',
@@ -127,16 +129,17 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     right: 0,
     maxHeight: '60vh',
-    background: 'rgba(45, 35, 25, 0.92)',
-    backdropFilter: 'blur(16px)',
+    background: 'rgba(255, 253, 248, 0.92)',
+    backdropFilter: 'blur(20px)',
     borderRadius: '20px 20px 0 0',
-    border: '1px solid rgba(255,200,100,0.15)',
+    border: '1px solid rgba(255,255,255,0.4)',
     borderBottom: 'none',
+    boxShadow: '0 -4px 30px rgba(0,0,0,0.08)',
     transition: 'transform 0.3s ease',
     zIndex: 20,
     display: 'flex',
     flexDirection: 'column',
-    fontFamily: 'system-ui, sans-serif',
+    fontFamily: FONT,
   },
   handle: {
     padding: '10px 0 6px',
@@ -148,21 +151,21 @@ const styles: Record<string, React.CSSProperties> = {
     width: 40,
     height: 4,
     borderRadius: 2,
-    background: 'rgba(255,255,255,0.2)',
+    background: 'rgba(0,0,0,0.12)',
   },
   header: {
     padding: '4px 20px 12px',
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    borderBottom: '1px solid rgba(0,0,0,0.06)',
   },
   title: {
     fontSize: 16,
     fontWeight: 600,
-    color: '#FFF5E1',
+    color: '#3A3632',
     margin: 0,
   },
   subtitle: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
+    color: '#A09A94',
   },
   questList: {
     padding: '12px 20px',
@@ -172,8 +175,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
   },
   questCard: {
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(0,0,0,0.02)',
+    border: '1px solid rgba(0,0,0,0.06)',
     borderRadius: 12,
     padding: 14,
     position: 'relative',
@@ -188,7 +191,7 @@ const styles: Record<string, React.CSSProperties> = {
   questTitle: {
     fontSize: 14,
     fontWeight: 500,
-    color: '#FFF5E1',
+    color: '#3A3632',
     marginBottom: 8,
     lineHeight: 1.3,
   },
@@ -199,30 +202,31 @@ const styles: Record<string, React.CSSProperties> = {
   },
   questXp: {
     fontSize: 12,
-    color: '#FFD700',
+    color: '#C4963A',
     fontWeight: 600,
   },
   questDiff: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.35)',
+    color: '#A09A94',
   },
   completeBtn: {
     position: 'absolute',
     top: 12,
     right: 12,
-    background: 'rgba(100, 200, 100, 0.2)',
-    border: '1px solid rgba(100, 200, 100, 0.3)',
+    background: 'rgba(140, 197, 162, 0.15)',
+    border: '1px solid rgba(140, 197, 162, 0.3)',
     borderRadius: 8,
     padding: '4px 12px',
-    color: '#90EE90',
+    color: '#5A9E73',
     fontSize: 11,
+    fontWeight: 600,
     cursor: 'pointer',
-    fontFamily: 'system-ui, sans-serif',
+    fontFamily: FONT,
   },
   emptyState: {
     textAlign: 'center' as const,
     padding: '24px 0',
-    color: 'rgba(255,255,255,0.5)',
+    color: '#A09A94',
     fontSize: 13,
   },
 }

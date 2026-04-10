@@ -1,4 +1,5 @@
 import type { IslandState } from '../game/IslandState'
+import { FONT } from '../theme'
 
 interface Props {
   island: IslandState
@@ -36,14 +37,15 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 10,
   },
   levelBadge: {
-    background: 'rgba(0,0,0,0.5)',
-    backdropFilter: 'blur(8px)',
+    background: 'rgba(255,255,255,0.22)',
+    backdropFilter: 'blur(12px)',
     borderRadius: 20,
     padding: '6px 14px',
     fontSize: 14,
-    fontWeight: 700,
-    color: '#FFD700',
-    fontFamily: 'system-ui, sans-serif',
+    fontWeight: 800,
+    color: '#C4963A',
+    fontFamily: FONT,
+    border: '1px solid rgba(255,255,255,0.3)',
   },
   xpContainer: {
     display: 'flex',
@@ -52,29 +54,31 @@ const styles: Record<string, React.CSSProperties> = {
   },
   xpBarOuter: {
     width: 140,
-    height: 12,
-    background: 'rgba(0,0,0,0.3)',
-    borderRadius: 10,
+    height: 10,
+    background: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
     overflow: 'hidden',
+    border: '1px solid rgba(255,255,255,0.15)',
   },
   xpBarInner: {
     height: '100%',
-    background: 'linear-gradient(90deg, #FFD700, #FFA500)',
-    borderRadius: 10,
+    background: 'linear-gradient(90deg, #F2C464, #E8A848)',
+    borderRadius: 8,
     transition: 'width 0.5s ease',
   },
   xpText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'system-ui, sans-serif',
+    color: 'rgba(58,54,50,0.6)',
+    fontFamily: FONT,
   },
   streak: {
-    background: 'rgba(255,100,50,0.6)',
-    backdropFilter: 'blur(8px)',
+    background: 'rgba(224,122,110,0.2)',
+    backdropFilter: 'blur(12px)',
     borderRadius: 12,
     padding: '4px 10px',
     fontSize: 12,
-    color: '#fff',
-    fontFamily: 'system-ui, sans-serif',
+    color: '#C4603A',
+    fontFamily: FONT,
+    border: '1px solid rgba(224,122,110,0.3)',
   },
 }

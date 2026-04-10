@@ -1,5 +1,6 @@
 import { signInWithGoogle } from '../firebase/auth'
 import { useState } from 'react'
+import { SKY_GRADIENT, FONT } from '../theme'
 
 interface Props {
   onSignedIn: () => void
@@ -35,6 +36,7 @@ export function LoginScreen({ onSignedIn }: Props) {
           into quests that grow a beautiful floating island.
         </p>
         <button
+          className="btn-primary"
           onClick={handleLogin}
           disabled={loading}
           style={{
@@ -60,38 +62,41 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #98D8C8 70%, #7FB069 100%)',
-    fontFamily: 'system-ui, sans-serif',
+    background: SKY_GRADIENT,
+    fontFamily: FONT,
   },
   card: {
-    background: 'rgba(255, 250, 240, 0.92)',
+    background: 'rgba(255, 253, 248, 0.88)',
     backdropFilter: 'blur(16px)',
     borderRadius: 24,
     padding: '48px 40px',
     maxWidth: 400,
     textAlign: 'center' as const,
-    boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
-    border: '1px solid rgba(255,255,255,0.5)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+    border: '1px solid rgba(255,255,255,0.6)',
   },
   island: {
     fontSize: 64,
     marginBottom: 8,
+    animation: 'floatBob 3s ease-in-out infinite',
+    display: 'inline-block',
   },
   title: {
     fontSize: 32,
-    fontWeight: 700,
-    color: '#2D1B0E',
+    fontWeight: 800,
+    color: '#3A3632',
     margin: '0 0 8px',
+    fontFamily: FONT,
   },
   subtitle: {
     fontSize: 16,
-    color: '#5A3E1B',
+    color: '#6B6560',
     fontWeight: 500,
     margin: '0 0 16px',
   },
   description: {
     fontSize: 14,
-    color: '#7A6040',
+    color: '#8A847E',
     lineHeight: 1.5,
     margin: '0 0 28px',
   },
@@ -101,21 +106,22 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 16,
     fontWeight: 600,
     color: '#fff',
-    background: 'linear-gradient(135deg, #4285F4, #34A853)',
+    background: 'linear-gradient(135deg, #7EAED4, #8CC5A2)',
     border: 'none',
-    borderRadius: 12,
+    borderRadius: 14,
     cursor: 'pointer',
-    fontFamily: 'system-ui, sans-serif',
-    boxShadow: '0 4px 12px rgba(66,133,244,0.3)',
+    fontFamily: FONT,
+    boxShadow: '0 4px 16px rgba(126,174,212,0.3)',
+    transition: 'all 0.2s ease',
   },
   error: {
-    color: '#EA4335',
+    color: '#E07A6E',
     fontSize: 13,
     marginTop: 12,
   },
   privacy: {
     fontSize: 11,
-    color: '#999',
+    color: '#A09A94',
     marginTop: 20,
     lineHeight: 1.4,
   },
