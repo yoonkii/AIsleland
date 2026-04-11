@@ -1,38 +1,40 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Nunito', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
 
+/* ===== Breathing sky ===== */
+@keyframes breatheSky {
+  0%, 100% {
+    background: linear-gradient(175deg, #7EB5D6 0%, #A8D0E4 30%, #F5D6C3 55%, #E8C9A0 80%, #D4C4A0 100%);
+  }
+  50% {
+    background: linear-gradient(175deg, #89C4E1 0%, #B5D8E8 30%, #E8D4C8 55%, #F0E4D0 80%, #D4DBC0 100%);
+  }
+}
+
+/* ===== Entrance choreography (cinematic, not SaaS) ===== */
+@keyframes islandRise {
+  from { opacity: 0; transform: translate(-50%, 40px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes heroFloat {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, -10px); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateX(-50%) translateY(16px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes floatBob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-8px); }
-}
-
-@keyframes floatSlow {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50%      { transform: translateY(-12px) rotate(2deg); }
-}
-
-@keyframes driftRight {
-  0%   { transform: translateX(-120%) translateY(0); opacity: 0; }
-  10%  { opacity: 0.6; }
-  90%  { opacity: 0.6; }
-  100% { transform: translateX(120vw) translateY(-20px); opacity: 0; }
-}
-
-@keyframes driftLeft {
-  0%   { transform: translateX(120%) translateY(0); opacity: 0; }
-  10%  { opacity: 0.4; }
-  90%  { opacity: 0.4; }
-  100% { transform: translateX(-120vw) translateY(-15px); opacity: 0; }
+@keyframes buttonPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(91,173,138,0.3), 0 0 0 0 rgba(91,173,138,0); }
+  50%      { box-shadow: 0 4px 20px rgba(91,173,138,0.3), 0 0 0 8px rgba(91,173,138,0.08); }
 }
 
 @keyframes pulseGlow {
@@ -40,56 +42,114 @@ body { font-family: 'Nunito', system-ui, sans-serif; -webkit-font-smoothing: ant
   50%      { box-shadow: 0 0 12px 4px rgba(242, 196, 100, 0.25); }
 }
 
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+/* ===== Floating particles (light motes) ===== */
+@keyframes moteFloat {
+  0%   { transform: translateY(0) translateX(0) scale(0.8); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateY(-100px) translateX(30px) scale(1.2); opacity: 0; }
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to   { opacity: 1; transform: scale(1); }
+.mote {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: radial-gradient(circle, rgba(255,240,200,0.8), transparent);
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
 }
+.mote-1  { left: 12%; top: 65%; animation: moteFloat 9s ease-in-out infinite 0s; width: 5px; height: 5px; }
+.mote-2  { left: 28%; top: 45%; animation: moteFloat 11s ease-in-out infinite 1.5s; width: 3px; height: 3px; }
+.mote-3  { left: 55%; top: 55%; animation: moteFloat 8s ease-in-out infinite 3s; width: 6px; height: 6px; }
+.mote-4  { left: 72%; top: 40%; animation: moteFloat 12s ease-in-out infinite 2s; width: 4px; height: 4px; }
+.mote-5  { left: 85%; top: 60%; animation: moteFloat 10s ease-in-out infinite 4s; width: 3px; height: 3px; }
+.mote-6  { left: 20%; top: 35%; animation: moteFloat 13s ease-in-out infinite 5s; width: 5px; height: 5px; }
+.mote-7  { left: 42%; top: 70%; animation: moteFloat 9s ease-in-out infinite 6.5s; width: 4px; height: 4px; }
+.mote-8  { left: 65%; top: 30%; animation: moteFloat 11s ease-in-out infinite 7s; width: 3px; height: 3px; }
+.mote-9  { left: 35%; top: 25%; animation: moteFloat 10s ease-in-out infinite 8s; width: 5px; height: 5px; }
+.mote-10 { left: 78%; top: 50%; animation: moteFloat 14s ease-in-out infinite 3.5s; width: 4px; height: 4px; }
+.mote-11 { left: 8%;  top: 50%; animation: moteFloat 12s ease-in-out infinite 9s; width: 3px; height: 3px; }
+.mote-12 { left: 50%; top: 38%; animation: moteFloat 9s ease-in-out infinite 10s; width: 5px; height: 5px; }
+.mote-13 { left: 90%; top: 35%; animation: moteFloat 11s ease-in-out infinite 1s; width: 4px; height: 4px; }
+.mote-14 { left: 15%; top: 55%; animation: moteFloat 13s ease-in-out infinite 4.5s; width: 3px; height: 3px; }
+.mote-15 { left: 60%; top: 65%; animation: moteFloat 10s ease-in-out infinite 7.5s; width: 6px; height: 6px; }
 
-@keyframes heroFloat {
-  0%, 100% { transform: translate(-50%, 0) scale(1); }
-  50%      { transform: translate(-50%, -10px) scale(1.01); }
-}
-
-/* Clouds */
+/* ===== Clouds (SVG-like organic shapes via box-shadow) ===== */
 .cloud {
   position: absolute;
-  background: rgba(255,255,255,0.5);
-  border-radius: 100px;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Back clouds — distant, blurry, faint */
+.cloud-back-1 {
+  width: 200px; height: 60px; border-radius: 100px;
+  background: rgba(255,255,255,0.15);
+  filter: blur(3px);
+  top: 10%; animation: driftRight 55s linear infinite;
+}
+.cloud-back-2 {
+  width: 160px; height: 45px; border-radius: 100px;
+  background: rgba(255,255,255,0.12);
+  filter: blur(4px);
+  top: 18%; animation: driftLeft 65s linear infinite 10s;
+}
+
+/* Front clouds — closer, sharper, more opaque */
+.cloud-front-1 {
+  width: 130px; height: 50px; border-radius: 100px;
+  background: rgba(255,255,255,0.45);
+  filter: blur(0.5px);
+  top: 6%; animation: driftRight 30s linear infinite 5s;
+}
+.cloud-front-1::before {
+  content: ''; position: absolute; border-radius: 50%;
+  width: 55px; height: 55px; top: -25px; left: 25px;
+  background: rgba(255,255,255,0.45);
+}
+.cloud-front-1::after {
+  content: ''; position: absolute; border-radius: 50%;
+  width: 70px; height: 60px; top: -30px; left: 55px;
+  background: rgba(255,255,255,0.45);
+}
+.cloud-front-2 {
+  width: 100px; height: 38px; border-radius: 100px;
+  background: rgba(255,255,255,0.35);
+  top: 15%; animation: driftLeft 38s linear infinite 18s;
+}
+.cloud-front-2::before {
+  content: ''; position: absolute; border-radius: 50%;
+  width: 45px; height: 45px; top: -20px; left: 18px;
+  background: rgba(255,255,255,0.35);
+}
+.cloud-front-2::after {
+  content: ''; position: absolute; border-radius: 50%;
+  width: 55px; height: 50px; top: -24px; left: 42px;
+  background: rgba(255,255,255,0.35);
+}
+
+@keyframes driftRight {
+  from { transform: translateX(-150%) translateY(0); }
+  to   { transform: translateX(110vw) translateY(-15px); }
+}
+@keyframes driftLeft {
+  from { transform: translateX(110vw) translateY(0); }
+  to   { transform: translateX(-150%) translateY(-10px); }
+}
+
+/* ===== Horizon glow ===== */
+.horizon-glow {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(245,200,160,0.25), transparent);
   pointer-events: none;
 }
-.cloud::before, .cloud::after {
-  content: '';
-  position: absolute;
-  background: inherit;
-  border-radius: 50%;
-}
-.cloud-1 {
-  width: 120px; height: 40px;
-  top: 12%; animation: driftRight 35s linear infinite;
-}
-.cloud-1::before { width: 50px; height: 50px; top: -25px; left: 20px; }
-.cloud-1::after { width: 70px; height: 60px; top: -30px; left: 50px; }
-.cloud-2 {
-  width: 90px; height: 30px;
-  top: 22%; animation: driftLeft 42s linear infinite 8s;
-}
-.cloud-2::before { width: 40px; height: 40px; top: -20px; left: 15px; }
-.cloud-2::after { width: 55px; height: 45px; top: -22px; left: 38px; }
-.cloud-3 {
-  width: 150px; height: 45px;
-  top: 8%; animation: driftRight 50s linear infinite 15s;
-}
-.cloud-3::before { width: 60px; height: 55px; top: -28px; left: 25px; }
-.cloud-3::after { width: 80px; height: 65px; top: -32px; left: 60px; }
 
-/* Interactive */
+/* ===== Interactive elements ===== */
 .btn-primary { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(126,174,212,0.4) !important; }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(91,173,138,0.4) !important; }
 .btn-primary:active { transform: translateY(0); }
 
 .btn-glass { transition: all 0.15s ease; }
@@ -101,19 +161,22 @@ body { font-family: 'Nunito', system-ui, sans-serif; -webkit-font-smoothing: ant
 .complete-btn { transition: all 0.15s ease; }
 .complete-btn:hover { background: rgba(140,197,162,0.3) !important; }
 
-/* Login card entrance */
-.login-card {
-  animation: scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+/* ===== Login entrance (cinematic) ===== */
+.login-bg {
+  animation: breatheSky 60s ease-in-out infinite;
 }
-
-/* Hero island image */
-.hero-island {
-  animation: heroFloat 4s ease-in-out infinite;
+.login-island {
+  animation: islandRise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both,
+             heroFloat 5s ease-in-out 1.5s infinite;
 }
+.login-motes { animation: fadeUp 1.5s ease 0.8s both; }
+.login-ui    { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.6s both; }
+.login-title { animation: fadeUp 0.7s ease 1.9s both; }
+.login-tag   { animation: fadeUp 0.6s ease 2.2s both; }
+.login-btn   { animation: fadeUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 2.5s both; }
+.login-fine  { animation: fadeUp 0.5s ease 2.8s both; }
 
-/* Staggered fade-in for login elements */
-.fade-1 { animation: fadeIn 0.5s ease 0.4s both; }
-.fade-2 { animation: fadeIn 0.5s ease 0.55s both; }
-.fade-3 { animation: fadeIn 0.5s ease 0.7s both; }
-.fade-4 { animation: fadeIn 0.5s ease 0.85s both; }
-.fade-5 { animation: fadeIn 0.5s ease 1.0s both; }
+/* Button idle pulse after entrance */
+.login-btn-idle {
+  animation: buttonPulse 3s ease-in-out infinite;
+}

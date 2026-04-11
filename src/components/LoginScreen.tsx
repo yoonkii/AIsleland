@@ -1,6 +1,8 @@
 import { signInWithGoogle } from '../firebase/auth'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FONT } from '../theme'
+
+const TITLE_FONT = "'Fredoka', 'Nunito', system-ui, sans-serif"
 
 interface Props {
   onSignedIn: () => void
@@ -9,6 +11,13 @@ interface Props {
 export function LoginScreen({ onSignedIn }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [entered, setEntered] = useState(false)
+
+  // After entrance animation, enable idle pulse on button
+  useEffect(() => {
+    const t = setTimeout(() => setEntered(true), 3200)
+    return () => clearTimeout(t)
+  }, [])
 
   const handleLogin = async () => {
     setLoading(true)
@@ -24,32 +33,39 @@ export function LoginScreen({ onSignedIn }: Props) {
   }
 
   return (
-    <div style={styles.container}>
-      {/* Animated background clouds */}
-      <div className="cloud cloud-1" />
-      <div className="cloud cloud-2" />
-      <div className="cloud cloud-3" />
+    <div className="login-bg" style={styles.container}>
+      {/* Depth layer 1: distant clouds (blurry, faint) */}
+      <div className="cloud cloud-back-1" />
+      <div className="cloud cloud-back-2" />
 
-      {/* Soft radial glow behind card */}
-      <div style={styles.glow} />
+      {/* Depth layer 2: horizon glow */}
+      <div className="horizon-glow" />
 
-      {/* Hero island image */}
-      <div className="hero-island" style={styles.heroWrap}>
+      {/* Depth layer 3: hero island */}
+      <div className="login-island" style={styles.heroWrap}>
         <img src="/assets/map.png" alt="" style={styles.heroImg} />
       </div>
 
-      {/* Main card */}
-      <div className="login-card" style={styles.card}>
-        <h1 className="fade-1" style={styles.title}>AIsleland</h1>
-        <p className="fade-2" style={styles.subtitle}>
+      {/* Depth layer 4: front clouds (sharper, more opaque) */}
+      <div className="cloud cloud-front-1" />
+      <div className="cloud cloud-front-2" />
+
+      {/* Depth layer 5: ambient particles */}
+      <div className="login-motes">
+        {Array.from({ length: 15 }, (_, i) => (
+          <div key={i} className={`mote mote-${i + 1}`} />
+        ))}
+      </div>
+
+      {/* UI layer */}
+      <div className="login-ui" style={styles.uiWrap}>
+        <h1 className="login-title" style={styles.title}>AIsleland</h1>
+        <p className="login-tag" style={styles.tagline}>
           Complete real work. Grow your island.
         </p>
-        <p className="fade-3" style={styles.description}>
-          Connect your Google Workspace to turn emails, docs, and meetings
-          into quests that grow a beautiful floating island.
-        </p>
+
         <button
-          className="btn-primary fade-4"
+          className={`btn-primary login-btn ${entered ? 'login-btn-idle' : ''}`}
           onClick={handleLogin}
           disabled={loading}
           style={{
@@ -57,24 +73,23 @@ export function LoginScreen({ onSignedIn }: Props) {
             opacity: loading ? 0.6 : 1,
           }}
         >
-          {loading ? (
-            <span>Connecting...</span>
-          ) : (
+          {loading ? 'Connecting...' : (
             <span style={styles.btnContent}>
-              <svg style={styles.googleIcon} viewBox="0 0 24 24">
-                <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              <svg style={styles.googleIcon} viewBox="0 0 533.5 544.3">
+                <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37.1-4.7-55.3H272.1v104.8h147c-6.1 33.8-25.7 63.7-54.4 82.7v68h87.7c51.5-47.4 81.1-117.4 81.1-200.2z"/>
+                <path fill="#34A853" d="M272.1 544.3c73.4 0 135.3-24.1 180.4-65.7l-87.7-68c-24.4 16.6-55.9 26-92.6 26-71 0-131.2-47.9-152.8-112.3H28.9v70.1c46.2 91.9 140.3 149.9 243.2 149.9z"/>
+                <path fill="#FBBC04" d="M119.3 324.3c-11.4-33.8-11.4-70.4 0-104.2V150H28.9c-38.6 76.9-38.6 167.5 0 244.4l90.4-70.1z"/>
+                <path fill="#EA4335" d="M272.1 107.7c38.8-.6 76.3 14 104.4 40.8l77.7-77.7C405 24.6 339.7-.8 272.1 0 169.2 0 75.1 58 28.9 150l90.4 70.1c21.5-64.5 81.8-112.4 152.8-112.4z"/>
               </svg>
               Sign in with Google
             </span>
           )}
         </button>
+
         {error && <p style={styles.error}>{error}</p>}
-        <p className="fade-5" style={styles.privacy}>
-          We only read metadata (titles, sender names).
-          <br />Your content is never stored or shared.
+
+        <p className="login-fine" style={styles.fineprint}>
+          Metadata only. Your content stays private.
         </p>
       </div>
     </div>
@@ -89,86 +104,67 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: 'max(40px, env(safe-area-inset-bottom, 40px))',
-    background: 'linear-gradient(170deg, #B8D8E8 0%, #C8DFE8 25%, #D4E8D0 50%, #E2DCCC 75%, #D4E8D0 100%)',
     fontFamily: FONT,
     position: 'relative',
     overflow: 'hidden',
   },
-  glow: {
-    position: 'absolute',
-    top: '25%',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '80vw',
-    maxWidth: 500,
-    height: '40vh',
-    background: 'radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%)',
-    pointerEvents: 'none',
-  },
   heroWrap: {
     position: 'absolute',
-    top: '8%',
+    top: '6%',
     left: '50%',
     transform: 'translateX(-50%)',
-    width: 'min(70vw, 340px)',
-    height: 'min(70vw, 340px)',
+    width: 'min(80vw, 380px)',
+    height: 'min(80vw, 380px)',
     pointerEvents: 'none',
-    filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.1))',
+    filter: 'drop-shadow(0 24px 50px rgba(0,0,0,0.12))',
+    zIndex: 2,
   },
   heroImg: {
     width: '100%',
     height: '100%',
     objectFit: 'contain',
   },
-  card: {
-    background: 'rgba(255, 253, 248, 0.75)',
-    backdropFilter: 'blur(24px)',
-    WebkitBackdropFilter: 'blur(24px)',
-    borderRadius: 28,
-    padding: '36px 32px 28px',
-    width: 'calc(100% - 32px)',
-    maxWidth: 420,
-    textAlign: 'center' as const,
-    boxShadow: '0 -4px 40px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.8) inset',
-    border: '1px solid rgba(255,255,255,0.5)',
-    position: 'relative' as const,
-    zIndex: 2,
+  uiWrap: {
+    position: 'relative',
+    zIndex: 10,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    width: '100%',
+    padding: '0 24px',
+    paddingBottom: 'max(48px, env(safe-area-inset-bottom, 48px))',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 800,
-    color: '#2C2926',
+    fontSize: 'clamp(40px, 10vw, 56px)',
+    fontWeight: 700,
+    color: '#3D3229',
     margin: '0 0 6px',
-    fontFamily: FONT,
-    letterSpacing: '-0.5px',
+    fontFamily: TITLE_FONT,
+    letterSpacing: '1.5px',
+    textShadow: '0 2px 20px rgba(255,255,255,0.5)',
   },
-  subtitle: {
+  tagline: {
     fontSize: 15,
-    color: '#6B6560',
+    color: '#6B5B4E',
     fontWeight: 600,
-    margin: '0 0 14px',
-    letterSpacing: '-0.2px',
-  },
-  description: {
-    fontSize: 13,
-    color: '#9A948E',
-    lineHeight: 1.6,
-    margin: '0 0 24px',
+    margin: '0 0 28px',
+    letterSpacing: '0.3px',
+    textShadow: '0 1px 8px rgba(255,255,255,0.4)',
   },
   button: {
     width: '100%',
-    padding: '15px 24px',
+    maxWidth: 340,
+    padding: '16px 24px',
     fontSize: 15,
     fontWeight: 700,
     color: '#fff',
-    background: 'linear-gradient(135deg, #6A9EC0, #7BB89A)',
+    background: 'linear-gradient(135deg, #5BAD8A, #4A9E7A)',
     border: 'none',
-    borderRadius: 16,
+    borderRadius: 24,
     cursor: 'pointer',
     fontFamily: FONT,
-    boxShadow: '0 4px 20px rgba(106,158,192,0.35)',
-    letterSpacing: '-0.2px',
+    boxShadow: '0 4px 20px rgba(91,173,138,0.3), inset 0 1px 2px rgba(255,255,255,0.25)',
+    letterSpacing: '0.2px',
   },
   btnContent: {
     display: 'flex',
@@ -180,18 +176,18 @@ const styles: Record<string, React.CSSProperties> = {
     width: 18,
     height: 18,
     flexShrink: 0,
-    opacity: 0.9,
   },
   error: {
-    color: '#E07A6E',
+    color: '#D4654E',
     fontSize: 13,
     marginTop: 12,
-    fontWeight: 500,
+    fontWeight: 600,
+    textShadow: '0 1px 4px rgba(255,255,255,0.3)',
   },
-  privacy: {
+  fineprint: {
     fontSize: 11,
-    color: '#B5AFA9',
-    marginTop: 18,
-    lineHeight: 1.5,
+    color: 'rgba(61,50,41,0.4)',
+    marginTop: 16,
+    letterSpacing: '0.2px',
   },
 }
