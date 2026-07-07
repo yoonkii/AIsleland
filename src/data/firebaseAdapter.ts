@@ -3,9 +3,10 @@
 // events from quest_events + asset diffs.
 
 import { collection, onSnapshot, type Unsubscribe } from 'firebase/firestore'
-import { db } from '../firebase/config'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from '../firebase/config'
 import {
-  getOrCreateIsland, getOrCreateUser, selfReportComplete,
+  getOrCreateIsland, getOrCreateUser,
   subscribeToIsland, subscribeToQuests, subscribeToQuestEvents,
 } from '../firebase/firestore'
 import type { DataAdapter } from '../state/gameStore'
@@ -115,7 +116,10 @@ export async function createFirebaseAdapter(
 
   return {
     async completeQuest(questId) {
-      await selfReportComplete(questId, uid)
+      // The callable validates ownership/rate limits, awards XP, places the
+      // reward asset and writes the quest_event we animate from.
+      const complete = httpsCallable(functions, 'completeQuest')
+      await complete({ questId })
     },
     async moveAsset() {
       // Server owns placement in firebase mode (arrange sync not implemented yet).
