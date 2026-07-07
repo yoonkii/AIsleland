@@ -49,7 +49,7 @@ const CRITTER_NAMES: Record<CritterSpecies, string> = {
 
 export function createDemoAdapter(): DataAdapter {
   const store = useGameStore
-  let save = load() ?? seed()
+  const save = load() ?? seed()
   let disposed = false
   let arrivalTimer: ReturnType<typeof setTimeout> | null = null
 

@@ -7,6 +7,7 @@ import { Props } from './props/Props'
 import { Critters } from './critters/Critters'
 import { CameraRig } from './camera/CameraRig'
 import { CelebrationDirector, AmbientFX } from './fx/CelebrationDirector'
+import { PostFX } from './fx/PostFX'
 
 /**
  * Keeps store.timeOfDay in sync. Signed-in: wall clock (once a minute).
@@ -74,6 +75,7 @@ export function IslandScene() {
       </Suspense>
       <CameraRig />
       <CelebrationDirector />
+      <PostFX />
     </Canvas>
   )
 }
