@@ -100,7 +100,7 @@ export function CameraRig() {
         scratchTarget.set(s.focusTarget[0], s.focusTarget[1] + 0.6, s.focusTarget[2])
         // keep current azimuth, come in closer and slightly lower
         const azimuth = controls.getAzimuthalAngle()
-        sphericalPos(20, 58 * DEG, azimuth, scratchTarget, scratchPos)
+        sphericalPos(15, 58 * DEG, azimuth, scratchTarget, scratchPos)
         startFlight(scratchPos, scratchTarget, 900)
       } else if (savedView.current) {
         startFlight(savedView.current.pos, savedView.current.target, 800)
@@ -137,12 +137,15 @@ export function CameraRig() {
     const wantDrift = idleFor > CAMERA.idleDriftDelayS && !s.photoMode && !s.celebration
     driftBlend.current = THREE.MathUtils.lerp(driftBlend.current, wantDrift ? 1 : 0, 0.02)
     controls.autoRotate = driftBlend.current > 0.01
-    // autoRotateSpeed 2.0 == 30s/orbit; convert rad/s to that scale
-    controls.autoRotateSpeed = (CAMERA.idleDriftRadPerS / (Math.PI * 2 / 30) / 2) * 2 * driftBlend.current
+    // autoRotateSpeed 2.0 == one orbit per 30s == 2π/30 rad/s
+    controls.autoRotateSpeed =
+      (CAMERA.idleDriftRadPerS / (Math.PI * 2 / 30)) * 2 * driftBlend.current
     controls.update()
   })
 
   const photoMode = useGameStore((s) => s.photoMode)
+  // during celebrations the rig dives well inside the normal orbit range
+  const celebrating = useGameStore((s) => s.celebration !== null || s.focusTarget !== null)
 
   return (
     <OrbitControls
@@ -151,8 +154,8 @@ export function CameraRig() {
       enablePan={false}
       enableDamping
       dampingFactor={CAMERA.damping}
-      minDistance={photoMode ? 10 : CAMERA.minDistance}
-      maxDistance={photoMode ? 44 : CAMERA.maxDistance}
+      minDistance={photoMode || celebrating ? 10 : CAMERA.minDistance}
+      maxDistance={photoMode ? 62 : CAMERA.maxDistance}
       minPolarAngle={photoMode ? 10 * DEG : CAMERA.minPolarDeg * DEG}
       maxPolarAngle={photoMode ? 85 * DEG : CAMERA.maxPolarDeg * DEG}
       target={CAMERA.target}

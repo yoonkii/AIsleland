@@ -23,18 +23,17 @@ export function HUD({ onSignOut }: { onSignOut: () => void }) {
   // animate xp ring
   const frac = Math.min(1, island.xp / Math.max(1, island.xpToNextLevel))
   const [shownFrac, setShownFrac] = useState(frac)
-  const raf = useRef(0)
+  const shownRef = useRef(frac)
   useEffect(() => {
-    cancelAnimationFrame(raf.current)
+    let raf = 0
     const animate = () => {
-      setShownFrac((prev) => {
-        const next = prev + (frac - prev) * 0.08
-        if (Math.abs(next - frac) > 0.002) raf.current = requestAnimationFrame(animate)
-        return next
-      })
+      const next = shownRef.current + (frac - shownRef.current) * 0.08
+      shownRef.current = next
+      setShownFrac(next)
+      if (Math.abs(next - frac) > 0.002) raf = requestAnimationFrame(animate)
     }
-    raf.current = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(raf.current)
+    raf = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(raf)
   }, [frac])
 
   if (photoMode) return null

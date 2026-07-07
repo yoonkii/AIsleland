@@ -35,24 +35,36 @@ export function App() {
     return () => window.removeEventListener('pointerdown', unlock)
   }, [])
 
-  // Resume a Firebase session if the user is already signed in.
+  // Resume/attach a Firebase session whenever auth produces a user. This is
+  // the ONLY code path that creates a firebase adapter — onGoogle just signs
+  // in and lets this listener do the wiring, so the two can never race into
+  // creating (and leaking) two adapters. `connecting` closes the async
+  // check-then-act window against duplicate auth events.
+  const connecting = useRef(false)
   useEffect(() => {
     if (!hasFirebaseConfig) return
     return onAuthChange(async (user) => {
       const state = useGameStore.getState()
-      if (user && state.mode === null) {
+      if (user && state.mode === null && !connecting.current) {
+        connecting.current = true
         try {
           const adapter = await createFirebaseAdapter(
             user.uid, user.email ?? '', user.displayName ?? 'Islander')
-          state.startSession('firebase', {
-            uid: user.uid,
-            displayName: user.displayName ?? 'Islander',
-            email: user.email ?? '',
-            photoURL: user.photoURL,
-          }, adapter)
+          if (useGameStore.getState().mode === null) {
+            state.startSession('firebase', {
+              uid: user.uid,
+              displayName: user.displayName ?? 'Islander',
+              email: user.email ?? '',
+              photoURL: user.photoURL,
+            }, adapter)
+          } else {
+            adapter.dispose()
+          }
         } catch (e) {
           console.error('firebase session failed', e)
           setError('Could not load your island. Try the demo instead.')
+        } finally {
+          connecting.current = false
         }
       }
       if (!user && state.mode === 'firebase') state.endSession()
@@ -67,22 +79,16 @@ export function App() {
         setError('Firebase is not configured — try the demo island!')
         return
       }
-      const user = await signInWithGoogle()
-      const adapter = await createFirebaseAdapter(
-        user.uid, user.email ?? '', user.displayName ?? 'Islander')
-      startSession('firebase', {
-        uid: user.uid,
-        displayName: user.displayName ?? 'Islander',
-        email: user.email ?? '',
-        photoURL: user.photoURL,
-      }, adapter)
+      // The onAuthChange listener above builds the adapter and starts the
+      // session as soon as the popup resolves.
+      await signInWithGoogle()
     } catch (e) {
       console.error(e)
       setError('Sign-in failed. You can still try the demo island!')
     } finally {
       setBusy(false)
     }
-  }, [startSession])
+  }, [])
 
   const onDemo = useCallback(() => {
     const adapter = createDemoAdapter()

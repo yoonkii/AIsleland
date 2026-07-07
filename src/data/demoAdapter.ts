@@ -241,7 +241,16 @@ function load(): DemoSave | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    currentSave = JSON.parse(raw) as DemoSave
+    const parsed = JSON.parse(raw) as Partial<DemoSave> | null
+    // shape-check so a corrupted/foreign value can't crash the game loop
+    if (
+      !parsed || typeof parsed.xp !== 'number' || typeof parsed.level !== 'number' ||
+      !Array.isArray(parsed.assets) || !Array.isArray(parsed.activeQuests) ||
+      !Array.isArray(parsed.critters)
+    ) return null
+    currentSave = parsed as DemoSave
+    currentSave.streakCount = typeof parsed.streakCount === 'number' ? parsed.streakCount : 0
+    currentSave.questCursor = typeof parsed.questCursor === 'number' ? parsed.questCursor : 0
     return currentSave
   } catch {
     return null

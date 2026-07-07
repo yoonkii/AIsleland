@@ -50,8 +50,9 @@ export function initAudio(): void {
     play(e.detail?.name)
   }) as EventListener)
 
-  void preloadFiles()
-  startAmbience()
+  // ambience picks file-vs-synth per layer, so it must wait for the preload
+  // to settle (fetch failures resolve fast; this is not a fixed timer race)
+  void preloadFiles().finally(() => startAmbience())
   startMusic()
 }
 
@@ -279,37 +280,33 @@ function startAmbience(): void {
     return g
   }
 
-  // start after preload settles so files win when available
-  setTimeout(() => {
-    if (!ctx || !bedBus) return
-    const water = fileAmbience('ambient_water', 0.25) ?? mkLoop(420, 0.05, 'lowpass')
-    const wind = mkLoop(240, 0.04, 'lowpass')
-    const dayLoop = fileAmbience('ambient_day', 0)
-    const nightLoop = fileAmbience('ambient_night', 0)
-    void water
+  const water = fileAmbience('ambient_water', 0.25) ?? mkLoop(420, 0.05, 'lowpass')
+  const wind = mkLoop(240, 0.04, 'lowpass')
+  const dayLoop = fileAmbience('ambient_day', 0)
+  const nightLoop = fileAmbience('ambient_night', 0)
+  void water
 
-    // LFO wind swell
-    const lfo = ctx.createOscillator()
-    lfo.frequency.value = 0.07
-    const lfoGain = ctx.createGain()
-    lfoGain.gain.value = 0.02
-    lfo.connect(lfoGain).connect(wind.gain)
-    lfo.start()
+  // LFO wind swell
+  const lfo = ctx.createOscillator()
+  lfo.frequency.value = 0.07
+  const lfoGain = ctx.createGain()
+  lfoGain.gain.value = 0.02
+  lfo.connect(lfoGain).connect(wind.gain)
+  lfo.start()
 
-    // day/night scheduler: synth birds & crickets when no files
-    setInterval(() => {
-      if (!ctx || document.hidden) return
-      const s = useGameStore.getState()
-      const t = s.timeOverride ?? s.timeOfDay
-      const day = Math.max(0, Math.sin((t - 0.25) * Math.PI * 2 / 1) ) // rough daylight 0..1
-      const dayAmt = t > 0.27 && t < 0.73 ? Math.min(1, day * 1.5) : 0
-      const nightAmt = t < 0.22 || t > 0.78 ? 1 : 0
-      if (dayLoop) dayLoop.gain.linearRampToValueAtTime(0.18 * dayAmt, ctx.currentTime + 2)
-      if (nightLoop) nightLoop.gain.linearRampToValueAtTime(0.15 * nightAmt, ctx.currentTime + 2)
-      if (!dayLoop && dayAmt > 0.3 && Math.random() < 0.4) birdChirp()
-      if (!nightLoop && nightAmt > 0.5 && Math.random() < 0.6) cricket()
-    }, 4000)
-  }, 2500)
+  // day/night scheduler: synth birds & crickets when no files
+  setInterval(() => {
+    if (!ctx || document.hidden) return
+    const s = useGameStore.getState()
+    const t = s.timeOverride ?? s.timeOfDay
+    const day = Math.max(0, Math.sin((t - 0.25) * Math.PI * 2 / 1) ) // rough daylight 0..1
+    const dayAmt = t > 0.27 && t < 0.73 ? Math.min(1, day * 1.5) : 0
+    const nightAmt = t < 0.22 || t > 0.78 ? 1 : 0
+    if (dayLoop) dayLoop.gain.linearRampToValueAtTime(0.18 * dayAmt, ctx.currentTime + 2)
+    if (nightLoop) nightLoop.gain.linearRampToValueAtTime(0.15 * nightAmt, ctx.currentTime + 2)
+    if (!dayLoop && dayAmt > 0.3 && Math.random() < 0.4) birdChirp()
+    if (!nightLoop && nightAmt > 0.5 && Math.random() < 0.6) cricket()
+  }, 4000)
 }
 
 function birdChirp(): void {

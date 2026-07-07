@@ -12,16 +12,18 @@ import {
 import type { DataAdapter } from '../state/gameStore'
 import { useGameStore } from '../state/gameStore'
 import type { CritterInstance, PlacedAsset, Quest } from '../state/types'
-import { CRITTER_SPECIES } from '../state/types'
+import { CRITTER_SPECIES, unlocksUpTo } from '../state/types'
 
 export async function createFirebaseAdapter(
   uid: string, email: string, displayName: string,
 ): Promise<DataAdapter> {
   const store = useGameStore
   const subs: Unsubscribe[] = []
+  const timers = new Set<ReturnType<typeof setTimeout>>()
   const knownQuests = new Map<string, Quest>()
   let prevLevel: number | null = null
   let latestAssets: PlacedAsset[] = []
+  let disposed = false
 
   await getOrCreateUser(uid, email, displayName)
   await getOrCreateIsland(uid)
@@ -46,11 +48,14 @@ export async function createFirebaseAdapter(
     store.getState().setCritters(critters)
 
     if (prevLevel !== null && island.level > prevLevel) {
+      const before = new Set(unlocksUpTo(prevLevel))
       store.getState().enqueueCelebration({
         kind: 'levelup',
         id: `cel-lvl-${island.level}-${Date.now()}`,
         newLevel: island.level,
-        unlocked: island.unlockedAssetTypes,
+        // only the NEWLY unlocked types — the island doc stores the
+        // cumulative list, which would list flowers as "new" at level 7
+        unlocked: unlocksUpTo(island.level).filter((t) => !before.has(t)),
       })
     }
     prevLevel = island.level
@@ -99,7 +104,9 @@ export async function createFirebaseAdapter(
       const quest = knownQuests.get(ev.questId)
       if (!quest) continue
       knownQuests.delete(ev.questId)
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        timers.delete(timer)
+        if (disposed) return // signed out before the beat landed
         const newest = latestAssets
           .filter((a) => a.plantedAt > Date.now() - 15_000)
           .sort((a, b) => b.plantedAt - a.plantedAt)[0]
@@ -111,6 +118,7 @@ export async function createFirebaseAdapter(
           rewardCritterId: null,
         })
       }, 1800)
+      timers.add(timer)
     }
   }))
 
@@ -125,6 +133,9 @@ export async function createFirebaseAdapter(
       // Server owns placement in firebase mode (arrange sync not implemented yet).
     },
     dispose() {
+      disposed = true
+      for (const t of timers) clearTimeout(t)
+      timers.clear()
       for (const u of subs) u()
     },
   }

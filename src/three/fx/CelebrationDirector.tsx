@@ -45,6 +45,7 @@ const quat = new THREE.Quaternion()
 const mat4 = new THREE.Matrix4()
 const scl = new THREE.Vector3()
 const col = new THREE.Color()
+const eul = new THREE.Euler()
 
 function bezier(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, t: number, out: THREE.Vector3) {
   const u = 1 - t
@@ -86,10 +87,10 @@ export function CelebrationDirector() {
   const domino = useRef<THREE.InstancedMesh>(null)
 
   const geo = useMemo(() => ({
-    confetti: new THREE.CircleGeometry(0.09, 3),
-    dust: new THREE.CircleGeometry(0.15, 12),
-    ring: new THREE.TorusGeometry(1, 0.07, 8, 40),
-    mote: new THREE.SphereGeometry(0.09, 8, 8),
+    confetti: new THREE.CircleGeometry(0.13, 3),
+    dust: new THREE.CircleGeometry(0.22, 12),
+    ring: new THREE.TorusGeometry(1, 0.09, 8, 40),
+    mote: new THREE.SphereGeometry(0.13, 8, 8),
     plane: paperPlaneGeometry(),
     drop: new THREE.IcosahedronGeometry(0.22, 1),
     splash: new THREE.CircleGeometry(0.6, 24),
@@ -267,7 +268,7 @@ export function CelebrationDirector() {
         const dk = THREE.MathUtils.clamp((t - i * 90) / 350, 0, 1)
         const d = 4 - i * 0.8
         v1.set(tgt.x - d, tgt.y + 0.05, tgt.z)
-        quat.setFromEuler(new THREE.Euler(-Math.PI / 2 + easeOutCubic(dk) * Math.PI, 0, 0))
+        quat.setFromEuler(eul.set(-Math.PI / 2 + easeOutCubic(dk) * Math.PI, 0, 0))
         scl.setScalar(dk > 0 && dk < 1 ? 1 : 0.001)
         mat4.compose(v1, quat, scl)
         domino.current.setMatrixAt(i, mat4)
@@ -286,7 +287,7 @@ export function CelebrationDirector() {
       ring.current.visible = rk > 0 && rk < 1
       ring.current.position.set(tgt.x, tgt.y + 0.06, tgt.z)
       ring.current.rotation.x = -Math.PI / 2
-      ring.current.scale.setScalar(Math.max(0.001, easeOutCubic(rk) * 1.6))
+      ring.current.scale.setScalar(Math.max(0.001, easeOutCubic(rk) * 2.4))
       mats.ring.opacity = 0.9 * (1 - rk)
     }
     if (!a.popPlayed && t >= 1020) { a.popPlayed = true; sfx('pop_spawn') }
@@ -335,7 +336,7 @@ export function CelebrationDirector() {
         origin.y + 0.4 + confettiVel[i * 3 + 1] * tS - 4.5 * tS * tS,
         origin.z + confettiVel[i * 3 + 2] * tS,
       )
-      quat.setFromEuler(new THREE.Euler(
+      quat.setFromEuler(eul.set(
         confettiSpin[i * 2] * tS + confettiSpin[i * 2 + 1],
         confettiSpin[i * 2] * tS * 0.7,
         confettiSpin[i * 2 + 1],

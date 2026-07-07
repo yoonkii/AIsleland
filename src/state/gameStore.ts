@@ -107,7 +107,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   focusTarget: null,
   focusToken: 0,
 
-  startSession: (mode, player, adapter) => set({ mode, player, adapter }),
+  startSession: (mode, player, adapter) => {
+    // never leak a previous adapter's subscriptions
+    const prev = get().adapter
+    if (prev && prev !== adapter) prev.dispose()
+    set({ mode, player, adapter })
+  },
   endSession: () => {
     get().adapter?.dispose()
     set({
@@ -115,6 +120,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       island: initialIsland, assets: [], critters: [], quests: [],
       celebration: null, celebrationQueue: [], journalOpen: false,
       photoMode: false, arrangingAssetId: null,
+      timeOverride: null, focusTarget: null,
     })
   },
 

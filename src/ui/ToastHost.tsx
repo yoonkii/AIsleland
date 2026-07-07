@@ -11,19 +11,32 @@ export function ToastHost() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
   useEffect(() => {
-    // Seed with the current quests so the initial list doesn't toast.
+    // Only quests created after this session opened get a toast — the initial
+    // backlog (which in firebase mode arrives asynchronously after mount)
+    // must not fire a volley of owls.
+    const mountedAt = Date.now()
     const seen = new Set(useGameStore.getState().quests.map((q) => q.id))
-    return useGameStore.subscribe((s, prev) => {
+    const timers = new Set<ReturnType<typeof setTimeout>>()
+    const unsub = useGameStore.subscribe((s, prev) => {
       if (s.quests === prev.quests) return
       for (const q of s.quests) {
         if (seen.has(q.id)) continue
         seen.add(q.id)
+        if (q.createdAt < mountedAt - 5000) continue
         const toast = { id: q.id, text: `New quest: ${q.title}` }
         setToasts((t) => [...t.slice(-2), toast])
         window.dispatchEvent(new CustomEvent('aisleland-sfx', { detail: { name: 'owl_delivery' } }))
-        setTimeout(() => setToasts((t) => t.filter((x) => x.id !== toast.id)), 4500)
+        const timer = setTimeout(() => {
+          timers.delete(timer)
+          setToasts((t) => t.filter((x) => x.id !== toast.id))
+        }, 4500)
+        timers.add(timer)
       }
     })
+    return () => {
+      unsub()
+      for (const t of timers) clearTimeout(t)
+    }
   }, [])
 
   if (toasts.length === 0) return null

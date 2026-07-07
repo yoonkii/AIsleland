@@ -246,12 +246,10 @@ function CritterMesh({ critter }: { critter: CritterInstance }) {
 
   const onClick = (e: { stopPropagation: () => void }) => {
     e.stopPropagation()
-    const b = brain.current
-    b.mode = 'jump'
-    b.jumpStart = -1 // set next frame relative to clock; use emote timing below
-    b.emoteUntil = 0
-    // set times on next frame using performance clock offset
-    jumpQueue.push(b)
+    // Mode switch + clock stamping happen together in <Critters>'s useFrame —
+    // flipping mode here would let this mesh's earlier-registered useFrame
+    // consume an unstamped jump and finish it instantly.
+    jumpQueue.push(brain.current)
     window.dispatchEvent(new CustomEvent('aisleland-sfx', { detail: { name: spec.sfx } }))
   }
 
@@ -352,6 +350,7 @@ export function Critters() {
   useFrame(({ clock }) => {
     while (jumpQueue.length > 0) {
       const b = jumpQueue.pop()!
+      b.mode = 'jump'
       b.jumpStart = clock.elapsedTime
       b.emoteUntil = clock.elapsedTime + 1.4
     }

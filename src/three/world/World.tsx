@@ -40,7 +40,6 @@ export function World(): JSX.Element {
     // eslint-disable-next-line react-hooks/immutability -- three.js scene graph is imperatively owned
     scene.fog = worldFog
     return () => {
-      // eslint-disable-next-line react-hooks/immutability -- see above
       scene.fog = null
     }
   }, [scene])

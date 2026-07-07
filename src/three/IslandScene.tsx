@@ -33,13 +33,35 @@ function ClockSync() {
   return null
 }
 
+// Same recipes as ui.css .game-root[data-filter] — the WebGL buffer doesn't
+// carry CSS filters, so the postcard re-applies them via ctx.filter.
+const FILM_FILTERS: Record<string, string> = {
+  peach: 'sepia(.18) saturate(1.15) hue-rotate(-8deg) brightness(1.04)',
+  mint: 'saturate(1.1) hue-rotate(12deg) brightness(1.03)',
+  dusk: 'saturate(1.25) hue-rotate(-18deg) contrast(1.06) brightness(.97)',
+  mono: 'saturate(.3) sepia(.14) contrast(1.05) brightness(1.05)',
+}
+
 /** Listens for 'aisleland-snapshot' and downloads the canvas as a postcard PNG. */
 function SnapshotListener() {
   const gl = useThree((s) => s.gl)
   useEffect(() => {
     const onSnap = () => {
       try {
-        const url = gl.domElement.toDataURL('image/png')
+        const src = gl.domElement
+        const filterKey = document.querySelector('.game-root')?.getAttribute('data-filter')
+        let url: string
+        if (filterKey && FILM_FILTERS[filterKey]) {
+          const out = document.createElement('canvas')
+          out.width = src.width
+          out.height = src.height
+          const ctx = out.getContext('2d')!
+          ctx.filter = FILM_FILTERS[filterKey]
+          ctx.drawImage(src, 0, 0)
+          url = out.toDataURL('image/png')
+        } else {
+          url = src.toDataURL('image/png')
+        }
         const a = document.createElement('a')
         a.href = url
         a.download = `aisleland-postcard-${new Date().toISOString().slice(0, 10)}.png`
