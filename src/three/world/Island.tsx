@@ -6,7 +6,7 @@ import type { JSX } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { islandGeometry, rockGeometry } from './islandGeometry'
-import { meringueVertexMat, miniIslandMat } from './worldMaterials'
+import { meringueVertexMat, miniIslandMat, soilSkirtMat } from './worldMaterials'
 
 const ROCKS = [
   { radius: 7.2, phase: 0.0, baseY: -7.6, scale: 0.8 },
@@ -36,6 +36,11 @@ export function Island(): JSX.Element {
     <group>
       <mesh geometry={islandGeometry()} material={meringueVertexMat} castShadow receiveShadow />
 
+      {/* soil skirt just inside the cliff: noise gaps show earth, not void */}
+      <mesh position-y={-1.55} material={soilSkirtMat}>
+        <cylinderGeometry args={[12.2, 8.8, 2.2, 32, 1]} />
+      </mesh>
+
       {/* orbiting rock chunks under the island */}
       <group ref={orbitRef}>
         {ROCKS.map((r, i) => (
@@ -53,12 +58,12 @@ export function Island(): JSX.Element {
         ))}
       </group>
 
-      {/* distant mini-island silhouette, azimuth +120deg, r=45 */}
+      {/* distant mini-island silhouette on the horizon, azimuth +120deg */}
       <mesh
         geometry={islandGeometry()}
         material={miniIslandMat}
-        position={[Math.sin(2.1) * 45, -3.5, Math.cos(2.1) * 45]}
-        scale={0.3}
+        position={[Math.sin(2.1) * 55, -6, Math.cos(2.1) * 55]}
+        scale={0.4}
         rotation-y={1.2}
       />
     </group>

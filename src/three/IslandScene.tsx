@@ -62,7 +62,7 @@ export function IslandScene() {
       shadows={quality === 'high'}
       dpr={quality === 'high' ? [1, 2] : 1}
       gl={{ antialias: true, preserveDrawingBuffer: true }}
-      camera={{ position: [16, 12, 20], fov: 42, near: 0.5, far: 220 }}
+      camera={{ position: [-28.4, 24.6, 40.4], fov: 38, near: 0.5, far: 260 }}
       style={{ position: 'absolute', inset: 0 }}
     >
       <ClockSync />

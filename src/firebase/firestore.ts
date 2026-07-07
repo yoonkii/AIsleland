@@ -1,6 +1,6 @@
 import {
   doc, getDoc, setDoc, updateDoc, collection,
-  query, where, orderBy, onSnapshot, addDoc,
+  query, where, orderBy, onSnapshot,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from './config'
@@ -86,18 +86,6 @@ export function subscribeToQuestEvents(
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => d.data() as QuestEventDoc))
   })
-}
-
-// --- Self-report quest completion ---
-
-export async function selfReportComplete(questId: string, uid: string): Promise<void> {
-  // Write a quest_event that the Cloud Function will validate
-  await addDoc(collection(db, 'quest_events'), {
-    userId: uid,
-    questId,
-    type: 'completed',
-    timestamp: Date.now(),
-  } satisfies QuestEventDoc)
 }
 
 function getCurrentSeason(): IslandDoc['season'] {

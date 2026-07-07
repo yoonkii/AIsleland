@@ -24,11 +24,11 @@ interface Flight {
 
 const PHOTO_ORBITS = [
   // Hero: 3/4 view, 35° elevation
-  { radius: 22, polar: 55 * DEG, azimuth: -35 * DEG, target: [0, 1.2, 0] as const },
+  { radius: 48, polar: 55 * DEG, azimuth: -35 * DEG, target: [0, 1.2, 0] as const },
   // Cozy: low through-the-flowers angle
-  { radius: 17, polar: 78 * DEG, azimuth: 20 * DEG, target: [0, 0.6, 0] as const },
+  { radius: 26, polar: 78 * DEG, azimuth: 20 * DEG, target: [0, 1.0, 0] as const },
   // Aerial: top-down postcard
-  { radius: 26, polar: 22 * DEG, azimuth: -60 * DEG, target: [0, 0, 0] as const },
+  { radius: 58, polar: 24 * DEG, azimuth: -60 * DEG, target: [0, 0, 0] as const },
 ]
 
 const scratchPos = new THREE.Vector3()
@@ -100,7 +100,7 @@ export function CameraRig() {
         scratchTarget.set(s.focusTarget[0], s.focusTarget[1] + 0.6, s.focusTarget[2])
         // keep current azimuth, come in closer and slightly lower
         const azimuth = controls.getAzimuthalAngle()
-        sphericalPos(13, 58 * DEG, azimuth, scratchTarget, scratchPos)
+        sphericalPos(20, 58 * DEG, azimuth, scratchTarget, scratchPos)
         startFlight(scratchPos, scratchTarget, 900)
       } else if (savedView.current) {
         startFlight(savedView.current.pos, savedView.current.target, 800)

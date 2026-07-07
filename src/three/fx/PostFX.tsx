@@ -23,10 +23,10 @@ export function PostFX() {
   return (
     <EffectComposer frameBufferType={HalfFloatType} multisampling={0}>
       <Bloom mipmapBlur luminanceThreshold={0.85} intensity={0.6} radius={0.7} />
-      {photoMode ? <TiltShift2 blur={0.15} /> : <></>}
-      <HueSaturation saturation={0.12} />
-      <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.25} />
-      <Vignette offset={0.3} darkness={0.5} />
+      {photoMode ? <TiltShift2 blur={0.06} /> : <></>}
+      <HueSaturation saturation={0.15} />
+      <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.06} />
+      <Vignette offset={0.3} darkness={0.45} />
       <SMAA />
     </EffectComposer>
   )

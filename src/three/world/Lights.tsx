@@ -10,53 +10,58 @@ import { useGameStore, effectiveTimeOfDay } from '../../state/gameStore'
 import { PALETTE } from '../../design/tokens'
 import { colorTrack, scalarTrack, sunDirection, moonDirection, daylight } from './skyColors'
 
-// Sunlight tones (no palette token exists for raw light colors; the warm
-// day-white is picked to keep PALETTE.grass reading true under the toon ramp).
+// Keyframed light script per VISUAL_PLAYBOOK: warm key over a VIOLET ground
+// bounce (lavender daytime shadows, never grey), golden-hour peach, and a
+// moonlit blue night key so nothing ever reads as dirty black.
 const keyColorTrack = colorTrack([
-  [0.0, PALETTE.rimNight],
-  [0.2, PALETTE.rimNight],
-  [0.27, PALETTE.skyDuskHorizon],
-  [0.38, '#FFF7E8'],
-  [0.62, '#FFF7E8'],
-  [0.73, PALETTE.skyDuskHorizon],
-  [0.8, PALETTE.rimNight],
+  [0.0, '#9FB8E8'],
+  [0.2, '#9FB8E8'],
+  [0.27, '#FFC080'],
+  [0.38, '#FFF4DC'],
+  [0.62, '#FFF4DC'],
+  [0.7, '#FFDEBB'],
+  [0.76, '#F0BFB2'],
+  [0.82, '#9FB8E8'],
 ])
 const keyIntensityTrack = scalarTrack([
-  [0.0, 0.42],
-  [0.2, 0.42],
-  [0.27, 1.0],
-  [0.38, 1.4],
-  [0.62, 1.4],
-  [0.73, 1.0],
-  [0.8, 0.42],
+  [0.0, 0.5],
+  [0.2, 0.5],
+  [0.27, 1.2],
+  [0.38, 1.55],
+  [0.62, 1.55],
+  [0.7, 1.5],
+  [0.76, 1.05],
+  [0.82, 0.5],
 ])
 
 const hemiSkyTrack = colorTrack([
-  [0.0, '#2A3B66'],
-  [0.2, '#2A3B66'],
-  [0.27, '#F5B58C'],
+  [0.0, '#2E3560'],
+  [0.2, '#2E3560'],
+  [0.27, '#A8B8E8'],
   [0.38, '#BFE3FF'],
   [0.62, '#BFE3FF'],
-  [0.73, '#F5B58C'],
-  [0.8, '#2A3B66'],
+  [0.7, '#A8B8E8'],
+  [0.76, '#7B6FB8'],
+  [0.82, '#2E3560'],
 ])
 const hemiGroundTrack = colorTrack([
-  [0.0, '#1A2530'],
-  [0.2, '#1A2530'],
-  [0.27, '#7C6B8F'],
-  [0.38, '#E8C9A0'],
-  [0.62, '#E8C9A0'],
-  [0.73, '#7C6B8F'],
-  [0.8, '#1A2530'],
+  [0.0, '#3A3160'],
+  [0.2, '#3A3160'],
+  [0.27, '#C97BA0'],
+  [0.38, '#B9A6C9'],
+  [0.62, '#B9A6C9'],
+  [0.7, '#C97BA0'],
+  [0.76, '#5A4E8A'],
+  [0.82, '#3A3160'],
 ])
 const hemiIntensityTrack = scalarTrack([
-  [0.0, 0.35],
-  [0.2, 0.35],
-  [0.27, 0.5],
+  [0.0, 0.38],
+  [0.2, 0.38],
+  [0.27, 0.52],
   [0.38, 0.55],
   [0.62, 0.55],
-  [0.73, 0.5],
-  [0.8, 0.35],
+  [0.73, 0.62],
+  [0.8, 0.42],
 ])
 
 const fillColorTrack = colorTrack([
@@ -138,6 +143,7 @@ export function Lights(): JSX.Element {
         shadow-camera-far={62}
         shadow-radius={4}
         shadow-normalBias={0.05}
+        shadow-intensity={0.6}
       />
       <hemisphereLight ref={hemiRef} args={['#BFE3FF', '#E8C9A0', 0.55]} />
       <directionalLight ref={fillRef} position={[-14, 12, 10]} intensity={0.25} />

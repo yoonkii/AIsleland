@@ -361,14 +361,17 @@ let waterfallGeo: THREE.BufferGeometry | null = null
  */
 export function waterfallGeometry(): THREE.BufferGeometry {
   if (!waterfallGeo) {
-    const geo = new THREE.PlaneGeometry(1.2, 7, 6, 24)
+    const geo = new THREE.PlaneGeometry(1.45, 7, 6, 24)
     const pos = geo.getAttribute('position')
     for (let i = 0; i < pos.count; i++) {
       const s = (3.5 - pos.getY(i)) / 7 // 0 at top edge, 1 at bottom
-      const arc = Math.sin((s * Math.PI) / 2)
-      pos.setY(i, 0.4 - 7.4 * arc)
-      pos.setZ(i, 0.55 + 1.9 * (1 - Math.cos((s * Math.PI) / 2)))
-      pos.setX(i, pos.getX(i) * (1 + s * 0.45)) // sheet widens as it falls
+      const theta = (s * Math.PI) / 2
+      // Lip physics: HORIZONTAL tongue flowing out from under the grass
+      // overhang (local -z is toward the island center), curving into a
+      // vertical sheet. dy/dθ = 0 at the top, dz/dθ = 0 at the bottom.
+      pos.setY(i, -0.12 - 6.9 * (1 - Math.cos(theta)))
+      pos.setZ(i, -1.1 + 1.7 * Math.sin(theta))
+      pos.setX(i, pos.getX(i) * (1 + s * 0.4)) // sheet widens as it falls
     }
     geo.deleteAttribute('normal')
     waterfallGeo = geo
@@ -397,7 +400,7 @@ export function scatterTufts(
       y: terrainHeight(x, z) - 0.02,
       z,
       rot: rng() * Math.PI * 2,
-      scale: 0.7 + rng() * 0.75,
+      scale: 0.55 + rng() * 0.5,
     })
   }
   return out

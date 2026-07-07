@@ -8,8 +8,8 @@ export const PALETTE = {
   clay: '#C98A5E',
   cliff: '#E3B08A',
   soilLip: '#D9A066',
-  grass: '#A8D8A0',
-  grassHi: '#C8EBB8',
+  grass: '#93D18B',
+  grassHi: '#BEEAA6',
   pathSand: '#F2E3C2',
   pathPebble: '#D8C7A8',
 
@@ -95,16 +95,18 @@ export const TIMING = {
   cameraReturnMs: 800,
 } as const
 
+// Long-lens diorama framing: island (r=13) at ~60% of frame height with sky
+// above — pulled far back with a narrow FOV (VISUAL_PLAYBOOK "miniature").
 export const CAMERA = {
-  fov: 35,
-  defaultRadius: 24,
-  defaultPolarDeg: 62,
+  fov: 38,
+  defaultRadius: 55,
+  defaultPolarDeg: 64,
   defaultAzimuthDeg: -35,
-  target: [0, 1.2, 0] as [number, number, number],
-  minDistance: 16,
-  maxDistance: 34,
+  target: [0, 0.5, 0] as [number, number, number],
+  minDistance: 28,
+  maxDistance: 76,
   minPolarDeg: 40,
-  maxPolarDeg: 75,
+  maxPolarDeg: 78,
   damping: 0.08,
   idleDriftDelayS: 8,
   idleDriftRadPerS: 0.03,

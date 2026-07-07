@@ -87,7 +87,7 @@ export function CelebrationDirector() {
 
   const geo = useMemo(() => ({
     confetti: new THREE.CircleGeometry(0.09, 3),
-    dust: new THREE.PlaneGeometry(0.28, 0.28),
+    dust: new THREE.CircleGeometry(0.15, 12),
     ring: new THREE.TorusGeometry(1, 0.07, 8, 40),
     mote: new THREE.SphereGeometry(0.09, 8, 8),
     plane: paperPlaneGeometry(),
@@ -99,7 +99,7 @@ export function CelebrationDirector() {
 
   const mats = useMemo(() => ({
     confetti: new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
-    dust: new THREE.MeshBasicMaterial({ color: PALETTE.dustPuff, transparent: true, depthWrite: false }),
+    dust: new THREE.MeshBasicMaterial({ color: PALETTE.dustPuff, transparent: true, depthWrite: false, map: softDiscTexture() }),
     ring: new THREE.MeshBasicMaterial({ color: PALETTE.groundRing, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
     shock: new THREE.MeshBasicMaterial({ color: PALETTE.shockwave, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
     mote: new THREE.MeshBasicMaterial({ color: PALETTE.xpMote, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
@@ -307,7 +307,7 @@ export function CelebrationDirector() {
           dust.current.setMatrixAt(i, mat4)
         }
         dust.current.instanceMatrix.needsUpdate = true
-        mats.dust.opacity = 0.85 * (1 - dk)
+        mats.dust.opacity = 0.55 * (1 - dk)
       }
     }
     // confetti 1100-2300
@@ -400,6 +400,22 @@ export function CelebrationDirector() {
   )
 }
 
+let softDisc: THREE.CanvasTexture | null = null
+function softDiscTexture(): THREE.CanvasTexture {
+  if (!softDisc) {
+    const c = document.createElement('canvas')
+    c.width = c.height = 64
+    const ctx = c.getContext('2d')!
+    const g = ctx.createRadialGradient(32, 32, 4, 32, 32, 32)
+    g.addColorStop(0, 'rgba(255,255,255,1)')
+    g.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, 64, 64)
+    softDisc = new THREE.CanvasTexture(c)
+  }
+  return softDisc
+}
+
 function paperPlaneGeometry(): THREE.BufferGeometry {
   const g = new THREE.BufferGeometry()
   // two swept-back triangles + a body fold
@@ -416,7 +432,7 @@ function paperPlaneGeometry(): THREE.BufferGeometry {
 
 // ---------- ambient atmosphere: pollen motes + butterflies (day) ----------
 
-const POLLEN_N = 60
+const POLLEN_N = 36
 
 export function AmbientFX() {
   const pollen = useRef<THREE.InstancedMesh>(null)
@@ -443,14 +459,14 @@ export function AmbientFX() {
     return arr
   }, [])
 
-  const pollenGeo = useMemo(() => new THREE.PlaneGeometry(0.06, 0.06), [])
+  const pollenGeo = useMemo(() => new THREE.CircleGeometry(0.035, 8), [])
   const pollenMat = useMemo(() => new THREE.MeshBasicMaterial({
-    color: PALETTE.sparkle, transparent: true, opacity: 0.55,
+    color: PALETTE.sparkle, transparent: true, opacity: 0.3, map: softDiscTexture(),
     blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
   }), [])
   const wingGeo = useMemo(() => {
-    const g = new THREE.CircleGeometry(0.16, 6)
-    g.translate(0.14, 0, 0)
+    const g = new THREE.CircleGeometry(0.11, 6)
+    g.translate(0.1, 0, 0)
     return g
   }, [])
   const wingMat1 = useMemo(() => new THREE.MeshBasicMaterial({ color: PALETTE.heart, side: THREE.DoubleSide }), [])
@@ -462,8 +478,8 @@ export function AmbientFX() {
     const bob = islandBob(el)
 
     if (pollen.current) {
-      pollen.current.visible = day > 0.15
-      pollenMat.opacity = 0.55 * day
+      pollen.current.visible = day > 0.35
+      pollenMat.opacity = 0.3 * day
       if (pollen.current.visible) {
         for (let i = 0; i < POLLEN_N; i++) {
           const sd = seeds[i]
@@ -486,7 +502,7 @@ export function AmbientFX() {
       if (!fly) continue
       fly.visible = day > 0.2
       const tt = el * 0.25 * spd + off
-      fly.position.set(Math.sin(tt) * 7.5, 2.2 + bob + Math.sin(tt * 2.3) * 0.9, Math.cos(tt * 0.7) * 7.5)
+      fly.position.set(Math.sin(tt) * 7.5, 1.5 + bob + Math.sin(tt * 2.3) * 0.7, Math.cos(tt * 0.7) * 7.5)
       fly.rotation.y = Math.atan2(Math.cos(tt) * 7.5 * 0.25, -Math.sin(tt * 0.7) * 0.7 * 7.5 * 0.25)
     }
     for (const w of [wingL.current, wingL2.current]) if (w) w.rotation.y = -flap

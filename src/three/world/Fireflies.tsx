@@ -12,7 +12,7 @@ import { nightness } from './skyColors'
 import { mulberry32 } from './islandGeometry'
 import { terrainHeight } from '../coords'
 
-const COUNT = 220
+const COUNT = 150
 
 function buildGeometry(): THREE.BufferGeometry {
   const rng = mulberry32(0xf1ef1e)

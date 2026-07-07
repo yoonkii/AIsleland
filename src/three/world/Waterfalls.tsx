@@ -13,7 +13,9 @@ import { waterfallGeometry, mulberry32 } from './islandGeometry'
 import { terrainHeight } from '../coords'
 
 const AZIMUTHS = [2.62, 2.62 + Math.PI] as const // 10 o'clock and 4 o'clock
-const EDGE_RADIUS = 12.35
+// Just OUTSIDE the r=13 cliff lip — inside it the sheet pokes through the
+// cliff and reads as a broken sliver above the rim.
+const EDGE_RADIUS = 13.45
 
 // --- stripe sheet -----------------------------------------------------------
 
@@ -98,7 +100,7 @@ function Fall({ azimuth, seed }: { azimuth: number; seed: number }): JSX.Element
   const { yTop, mists, mistMats } = useMemo(() => {
     const rng = mulberry32(seed)
     const lipY =
-      terrainHeight(Math.sin(azimuth) * EDGE_RADIUS, Math.cos(azimuth) * EDGE_RADIUS) - 0.25
+      terrainHeight(Math.sin(azimuth) * EDGE_RADIUS, Math.cos(azimuth) * EDGE_RADIUS) - 0.02
     const specs: MistSpec[] = []
     const mats: THREE.SpriteMaterial[] = []
     for (let i = 0; i < 6; i++) {

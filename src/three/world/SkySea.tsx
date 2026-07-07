@@ -95,16 +95,21 @@ const frag = /* glsl */ `
     vec3 col = mix(uDeep, uShallow, exp(-dist * 0.04));
     col += uShallow * exp(-dist * 0.10) * 0.22;
 
-    // sparkle layer 1
-    float id1;
-    float d1 = voronoi(vWorld / 3.0 + uTime * vec2(0.03, 0.017), id1);
-    col += uSparkle * smoothstep(0.09, 0.0, d1) * (0.6 + 0.4 * sin(uTime * 2.0 + id1 * 6.2831)) * 0.55;
+    // sparkles fade with distance — far away they alias into "snow"
+    float sparkleFade = 1.0 - smoothstep(26.0, 62.0, dist);
 
-    // sparkle layer 2 (skipped on low quality)
+    // sparkle layer 1: sparse twinkle — only the brightest voronoi centers
+    float id1;
+    float d1 = voronoi(vWorld / 4.5 + uTime * vec2(0.03, 0.017), id1);
+    float tw1 = max(0.0, sin(uTime * 1.6 + id1 * 6.2831));
+    col += uSparkle * smoothstep(0.05, 0.0, d1) * tw1 * tw1 * 0.4 * sparkleFade;
+
+    // sparkle layer 2 (skipped on low quality): broad soft shimmer patches
     if (uQuality > 0.5) {
       float id2;
-      float d2 = voronoi(vWorld / 7.0 + uTime * vec2(-0.02, 0.04), id2);
-      col += uSparkle * smoothstep(0.07, 0.0, d2) * (0.6 + 0.4 * sin(uTime * 1.6 + id2 * 6.2831)) * 0.4;
+      float d2 = voronoi(vWorld / 9.0 + uTime * vec2(-0.02, 0.04), id2);
+      float tw2 = max(0.0, sin(uTime * 1.1 + id2 * 6.2831));
+      col += uSparkle * smoothstep(0.06, 0.0, d2) * tw2 * tw2 * 0.22 * sparkleFade;
     }
 
     // fake reflection: brighten toward the horizon, then dissolve into the dome
