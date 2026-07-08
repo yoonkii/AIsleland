@@ -6,16 +6,36 @@ island: flowers bloom, trees rise, windmills spin, and critters move in.
 
 Built with React 19, Three.js (@react-three/fiber), zustand and Firebase.
 
-## Quick start
+## Run it on your machine
+
+**Requirements:** Node.js **20.19+ or 22.12+** (Vite 8). Check with `node -v`.
+If you use nvm: `nvm install && nvm use` (an `.nvmrc` pins Node 22).
 
 ```bash
+# grab this branch
+git fetch origin claude/workspace-game-3d-revamp-i7e3zz
+git checkout claude/workspace-game-3d-revamp-i7e3zz
+
+# install and run — no .env, no login needed to play
 npm install
 npm run dev
 ```
 
-Open the app and click **“Try the demo island”** — no login, no config needed.
-Demo quests trickle in and everything persists to localStorage. A full day/night
-cycle loops every 6 minutes in demo mode.
+Vite prints a local URL (e.g. `http://localhost:5173`). Open it and click
+**“Try the demo island.”** Demo quests trickle in, everything persists to
+localStorage, and a full day/night cycle loops every 6 minutes. `npm run dev`
+uses `--host`, so the printed **Network** URL also lets you open it from your
+phone on the same Wi-Fi.
+
+To view the optimized production build instead:
+
+```bash
+npm run build
+npm run preview   # serves the built app on http://localhost:4173
+```
+
+> Sound works out of the box via a built-in Web Audio synth. Everything 3D is
+> procedural — there are no model or texture files to download.
 
 ## The real thing (Google Workspace mode)
 
