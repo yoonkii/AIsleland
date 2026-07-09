@@ -58,10 +58,14 @@ ELEVENLABS_API_KEY=xi-... node scripts/generate-sfx.mjs
 
 Files land in `public/audio/` and automatically take priority over the synth.
 
-## Design
+## Design & handoff
 
-The complete game design — palette, celebration timelines, camera language,
-critter behaviors, sound table — lives in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — **start here to take over the project**:
+  current state, architecture map, critical invariants, known issues, roadmap.
+- [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) — the complete game design:
+  palette, celebration timelines, camera language, critter behaviors, sound table.
+- [`docs/VISUAL_PLAYBOOK.md`](docs/VISUAL_PLAYBOOK.md) — researched visual
+  techniques and the global grade settings.
 
 ### Architecture
 
