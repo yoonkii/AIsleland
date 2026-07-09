@@ -7,7 +7,7 @@ import type {
   CritterInstance, CritterSpecies, PlacedAsset, Quest, RewardType,
 } from '../state/types'
 import { LEVEL_THRESHOLDS, unlocksUpTo } from '../state/types'
-import { isInClearing, GRID_COLS, GRID_ROWS } from '../three/coords'
+import { gridToWorld, isInClearing, isWaterChannel, GRID_COLS, GRID_ROWS } from '../three/coords'
 
 const STORAGE_KEY = 'aisleland-demo-v2'
 const MAX_ACTIVE_QUESTS = 4
@@ -204,7 +204,10 @@ function randomFreeCell(assets: PlacedAsset[]): { col: number; row: number } | n
   const free: Array<{ col: number; row: number }> = []
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < GRID_COLS; col++) {
-      if (!occupied.has(`${col},${row}`) && isInClearing(col, row)) free.push({ col, row })
+      if (occupied.has(`${col},${row}`) || !isInClearing(col, row)) continue
+      const [wx, wz] = gridToWorld(col, row)
+      if (isWaterChannel(wx, wz)) continue // don't plant in the stream
+      free.push({ col, row })
     }
   }
   if (free.length === 0) return null

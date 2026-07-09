@@ -10,12 +10,9 @@ import { useGameStore, effectiveTimeOfDay } from '../../state/gameStore'
 import { PALETTE } from '../../design/tokens'
 import { daylight } from './skyColors'
 import { waterfallGeometry, mulberry32 } from './islandGeometry'
-import { terrainHeight } from '../coords'
+import { boundaryRadius, SURFACE_Y, VOXEL, WATERFALL_AZIMUTHS } from '../coords'
 
-const AZIMUTHS = [2.62, 2.62 + Math.PI] as const // 10 o'clock and 4 o'clock
-// Just OUTSIDE the r=13 cliff lip — inside it the sheet pokes through the
-// cliff and reads as a broken sliver above the rim.
-const EDGE_RADIUS = 13.45
+const AZIMUTHS = WATERFALL_AZIMUTHS // channels carved through the voxel rim
 
 // --- stripe sheet -----------------------------------------------------------
 
@@ -97,10 +94,13 @@ const MIST_LOOP_S = 2.2
 function Fall({ azimuth, seed }: { azimuth: number; seed: number }): JSX.Element {
   const mistRefs = useRef<Array<THREE.Sprite | null>>([])
 
-  const { yTop, mists, mistMats } = useMemo(() => {
+  const { edgeR, yTop, mists, mistMats } = useMemo(() => {
     const rng = mulberry32(seed)
-    const lipY =
-      terrainHeight(Math.sin(azimuth) * EDGE_RADIUS, Math.cos(azimuth) * EDGE_RADIUS) - 0.02
+    // hug the voxel island's actual outline at this angle; note the boundary
+    // uses atan2(z, x) while the azimuth convention is dir = (sin a, cos a)
+    const edge = boundaryRadius(Math.atan2(Math.cos(azimuth), Math.sin(azimuth))) + 0.05
+    // the channel floor is carved one voxel below the meadow — spill from there
+    const lipY = SURFACE_Y - VOXEL - 0.02
     const specs: MistSpec[] = []
     const mats: THREE.SpriteMaterial[] = []
     for (let i = 0; i < 6; i++) {
@@ -121,7 +121,7 @@ function Fall({ azimuth, seed }: { azimuth: number; seed: number }): JSX.Element
         }),
       )
     }
-    return { yTop: lipY, mists: specs, mistMats: mats }
+    return { edgeR: edge, yTop: lipY, mists: specs, mistMats: mats }
   }, [azimuth, seed])
 
   useFrame(({ clock }) => {
@@ -141,7 +141,7 @@ function Fall({ azimuth, seed }: { azimuth: number; seed: number }): JSX.Element
 
   return (
     <group
-      position={[Math.sin(azimuth) * EDGE_RADIUS, yTop, Math.cos(azimuth) * EDGE_RADIUS]}
+      position={[Math.sin(azimuth) * edgeR, yTop, Math.cos(azimuth) * edgeR]}
       rotation-y={azimuth}
     >
       <mesh geometry={waterfallGeometry()} material={sheetMaterial} />

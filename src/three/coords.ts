@@ -36,14 +36,50 @@ export function isInClearing(col: number, row: number): boolean {
   return dx * dx + dy * dy <= 1.0
 }
 
-/** Terrain height at world position — gentle rolling bumps outside the flat clearing. */
+/** Voxel edge length — the island is built from cubes of this size. */
+export const VOXEL = 0.55
+
+/** Organic island boundary radius at a given angle (voxel diorama outline). */
+export function boundaryRadius(theta: number): number {
+  return ISLAND_RADIUS + Math.sin(theta * 3 + 1.7) * 0.5 + Math.sin(theta * 7 + 0.4) * 0.3
+}
+
+/**
+ * Waterfall channel directions ("azimuth" convention: direction = (sin a, cos a)).
+ * The rim terraces are carved flat along these bearings so water can spill
+ * from the clearing over the cliff edge.
+ */
+export const WATERFALL_AZIMUTHS = [2.62, 2.62 + Math.PI] as const
+
+export function isWaterChannel(x: number, z: number): boolean {
+  const r = Math.hypot(x, z)
+  if (r < 6) return false
+  for (const a of WATERFALL_AZIMUTHS) {
+    if ((x * Math.sin(a) + z * Math.cos(a)) / r > 0.994) return true
+  }
+  return false
+}
+
+/** Smooth pre-quantization height: flat clearing, terraced meadow rise at the rim. */
+function smoothHeight(x: number, z: number): number {
+  const r = Math.hypot(x, z)
+  if (isWaterChannel(x, z)) return 0
+  const t = Math.min(1, Math.max(0, (r - 8.4) / (12.4 - 8.4)))
+  const rim = t * t * (3 - 2 * t)
+  const bump =
+    Math.sin(x * 0.55 + 1.3) * Math.cos(z * 0.5 - 0.7) * 0.5 +
+    Math.sin(x * 0.21 - 2.0) * Math.sin(z * 0.27 + 0.5) * 0.7
+  return rim * (1.4 + Math.max(0, bump) * 0.9)
+}
+
+/**
+ * Terrain height at world position — quantized to whole voxels so props and
+ * critters stand exactly on the terraced voxel surface.
+ */
 export function terrainHeight(x: number, z: number): number {
   const r = Math.hypot(x, z)
-  if (r > ISLAND_RADIUS) return SURFACE_Y
-  // Flat in the middle clearing, soft rise toward the rim.
-  const rim = Math.max(0, (r - 7.5) / (ISLAND_RADIUS - 7.5))
-  const bump =
-    Math.sin(x * 0.55 + 1.3) * Math.cos(z * 0.5 - 0.7) * 0.18 +
-    Math.sin(x * 0.21 - 2.0) * Math.sin(z * 0.27 + 0.5) * 0.3
-  return SURFACE_Y + rim * rim * 1.1 + bump * Math.min(1, rim + 0.25)
+  if (r > ISLAND_RADIUS + 1.2) return SURFACE_Y
+  // the stream bed is recessed one voxel below the meadow (grass banks)
+  if (isWaterChannel(x, z)) return SURFACE_Y - VOXEL
+  return SURFACE_Y + Math.floor(Math.max(0, smoothHeight(x, z)) / VOXEL) * VOXEL
 }

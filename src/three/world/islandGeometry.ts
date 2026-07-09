@@ -5,7 +5,7 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { PALETTE } from '../../design/tokens'
-import { ISLAND_RADIUS, terrainHeight, worldToGrid } from '../coords'
+import { ISLAND_RADIUS, isWaterChannel, terrainHeight, worldToGrid } from '../coords'
 
 /** Deterministic RNG so the island looks identical every visit. */
 export function mulberry32(seed: number): () => number {
@@ -395,6 +395,7 @@ export function scatterTufts(
     const x = Math.sin(a) * r
     const z = Math.cos(a) * r
     if (worldToGrid(x, z) !== null) continue // keep the clearing pristine
+    if (isWaterChannel(x, z)) continue // no grass in the stream
     out.push({
       x,
       y: terrainHeight(x, z) - 0.02,

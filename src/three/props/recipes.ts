@@ -165,13 +165,55 @@ function flowerParts(petal: string, budColor: string): PartSpec[] {
   return parts
 }
 
+/**
+ * Plush Pokémon-cozy canopy: one wide flattened dome hugged by side lobes and
+ * a crown puff — reads as a single squeezable mass with a clean toon crescent.
+ */
 function puffballCanopy(season: Season, variant: number, seed: number): PartSpec[] {
   const c = canopyColors(season, variant)
-  return [
-    { geo: ico(0.9), color: c.lo, colorTop: c.hi, position: [0.1, 1.55, -0.06], scale: [1, 0.8, 1], blob: 0.14, seed },
-    { geo: ico(0.7), color: c.lo, colorTop: c.hi, position: [-0.14, 2.1, 0.12], scale: [1, 0.8, 1], blob: 0.12, seed: seed + 1 },
-    { geo: ico(0.55), color: c.lo, colorTop: c.hi, position: [0.05, 2.6, 0.02], scale: [1, 0.82, 1], blob: 0.1, seed: seed + 2 },
+  const lobes: Array<[number, number, number, number]> = [
+    // [x, y, z, radius]
+    [0, 1.8, 0, 1.0],
+    [0.74, 1.55, 0.3, 0.6],
+    [-0.7, 1.6, -0.22, 0.58],
+    [0.12, 1.5, -0.7, 0.55],
+    [-0.18, 1.55, 0.66, 0.52],
+    [0.02, 2.5, 0.04, 0.62],
   ]
+  return lobes.map(([x, y, z, r], i) => ({
+    geo: ico(r),
+    color: c.lo,
+    colorTop: c.hi,
+    position: [x, y, z] as [number, number, number],
+    scale: [i === 0 ? 1.18 : 1, 0.82, i === 0 ? 1.18 : 1] as [number, number, number],
+    blob: r * 0.13,
+    seed: seed + i,
+  }))
+}
+
+/** Small blossom/fruit studs scattered on the canopy surface. */
+function canopyStuds(color: string, count: number, seed: number, rBase = 0.14): PartSpec[] {
+  const at: Array<[number, number, number]> = [
+    [0.95, 1.85, 0.42], [-0.9, 1.95, -0.32], [0.38, 2.7, 0.5], [-0.42, 2.85, 0.12],
+    [0.65, 2.35, -0.65], [0.02, 2.95, -0.18], [-0.8, 1.65, 0.55], [0.98, 1.6, -0.28],
+  ]
+  const parts: PartSpec[] = []
+  for (let i = 0; i < Math.min(count, at.length); i++) {
+    parts.push({
+      geo: ico(rBase + (i % 3) * 0.02),
+      color: shade(color, 0.9),
+      colorTop: color,
+      position: at[i],
+      blob: 0.04,
+      seed: seed + i,
+    })
+  }
+  return parts
+}
+
+/** One axis-aligned voxel-pine foliage layer (MagicaVoxel reference). */
+function pineLayer(w: number, y: number, color: string, colorTop: string): PartSpec {
+  return { geo: box(w, 0.46, w), color, colorTop, position: [0, y, 0] }
 }
 
 function housePartsAt(
@@ -223,51 +265,70 @@ function buildProp(type: string, season: Season): PropBuild {
       break
 
     // --- trees -------------------------------------------------------------
-    case 'tree-1': { // puffball
-      parts.push({ geo: cyl(0.12, 0.2, 1.2, 6), color: shade(T.trunk, 0.82), colorTop: T.trunk, position: [0, 0.6, 0] })
+    case 'tree-1': { // plush puffball (chunky trunk, spring blossoms)
+      parts.push({ geo: cyl(0.17, 0.27, 1.2, 7), color: shade(T.trunk, 0.82), colorTop: T.trunk, position: [0, 0.6, 0] })
       parts.push(...puffballCanopy(season, 0, 11))
+      if (season === 'spring') parts.push(...canopyStuds(T.blossom, 4, 80, 0.1))
       swayAmp = 0.035
       swayFreq = 0.9
       break
     }
-    case 'tree-2': { // pine
-      const c = season === 'winter'
-        ? { lo: T.canopySummerInner, hi: T.canopyWinter }
-        : { lo: T.canopySummerInner, hi: T.canopySummer }
+    case 'tree-2': { // voxel pine — axis-aligned stacked slabs
+      const dark = season === 'winter' ? '#4E7A62' : '#4F9E5C'
+      const lite = season === 'winter' ? '#6E9C86' : '#6DBE6A'
       parts.push(
-        { geo: cyl(0.1, 0.17, 0.55, 6), color: shade(T.trunk, 0.82), colorTop: T.trunk, position: [0, 0.275, 0] },
-        { geo: cone(0.9, 0.95, 7), color: c.lo, colorTop: c.hi, position: [0, 0.82, 0], blob: 0.07, seed: 21 },
-        { geo: cone(0.65, 0.9, 7), color: c.lo, colorTop: c.hi, position: [0, 1.45, 0], blob: 0.06, seed: 22 },
-        { geo: cone(0.4, 0.85, 7), color: c.lo, colorTop: c.hi, position: [0, 2.05, 0], blob: 0.05, seed: 23 },
+        { geo: box(0.34, 0.55, 0.34), color: shade(T.trunk, 0.8), colorTop: T.trunk, position: [0, 0.275, 0] },
+        pineLayer(1.85, 0.78, dark, lite),
+        pineLayer(1.45, 1.24, dark, lite),
+        pineLayer(1.1, 1.7, dark, lite),
+        pineLayer(0.78, 2.16, dark, lite),
+        pineLayer(0.46, 2.62, dark, lite),
+        { geo: box(0.24, 0.34, 0.24), color: lite, colorTop: season === 'winter' ? T.snow : lite, position: [0, 2.98, 0] },
       )
-      if (season === 'winter') parts.push({ geo: ico(0.16), color: T.snow, position: [0, 2.5, 0], scale: [1, 0.7, 1] })
-      swayAmp = 0.028
+      if (season === 'winter') {
+        // snow slabs resting on the tiers
+        parts.push(
+          { geo: box(1.55, 0.1, 1.55), color: shade(T.snow, 0.96), colorTop: T.snow, position: [0, 1.06, 0] },
+          { geo: box(0.86, 0.1, 0.86), color: shade(T.snow, 0.96), colorTop: T.snow, position: [0, 1.98, 0] },
+        )
+      }
+      swayAmp = 0.022
       swayFreq = 1.0
       break
     }
-    case 'tree-3': { // blossom
-      parts.push({ geo: cyl(0.11, 0.19, 1.1, 6), color: shade(T.trunk, 0.82), colorTop: T.trunk, position: [0, 0.55, 0] })
+    case 'tree-3': { // blossom — plush canopy studded with petals
+      parts.push({ geo: cyl(0.16, 0.25, 1.1, 7), color: shade(T.trunk, 0.82), colorTop: T.trunk, position: [0, 0.55, 0] })
       const spring: Season = season === 'autumn' ? 'autumn' : 'spring'
       parts.push(...puffballCanopy(spring, 2, 31))
       const stud = season === 'winter' ? T.snow : T.blossom
-      const studAt: Array<[number, number, number]> = [
-        [0.75, 1.7, 0.35], [-0.6, 1.95, -0.4], [0.3, 2.55, 0.42], [-0.35, 2.85, 0.05], [0.55, 2.3, -0.5],
-      ]
-      for (let i = 0; i < studAt.length; i++) {
-        parts.push({ geo: ico(0.17), color: shade(stud as string, 0.92), colorTop: stud, position: studAt[i], blob: 0.05, seed: 40 + i })
-      }
+      parts.push(...canopyStuds(stud, 8, 40))
+      // fallen petals at the roots
+      parts.push(
+        { geo: sph(0.16, 7, 5), color: shade(T.blossom, 0.94), colorTop: T.blossom, position: [0.5, 0.03, 0.3], scale: [1, 0.12, 0.8] },
+        { geo: sph(0.12, 7, 5), color: shade(T.blossom, 0.94), colorTop: T.blossom, position: [-0.45, 0.03, -0.15], scale: [1, 0.12, 0.8] },
+      )
       swayAmp = 0.045
       swayFreq = 1.1
       break
     }
-    case 'tree-4': { // grand two-lobe canopy
+    case 'tree-4': { // grand fruit tree — big plush tiers + ripe apples
       const c = canopyColors(season, 1)
       parts.push(
-        { geo: cyl(0.14, 0.22, 1.6, 6), color: shade(T.trunk, 0.82), colorTop: T.trunk, position: [0, 0.8, 0] },
-        { geo: cyl(0.07, 0.1, 0.7, 5), color: T.trunk, position: [0.35, 1.5, 0.1], rotation: [0, 0, -0.7] },
-        { geo: ico(1.05), color: c.lo, colorTop: c.hi, position: [-0.1, 2.35, 0], scale: [1, 0.85, 1], blob: 0.16, seed: 51 },
-        { geo: ico(0.5), color: c.lo, colorTop: c.hi, position: [0.85, 1.95, 0.2], blob: 0.1, seed: 52 },
+        { geo: cyl(0.2, 0.32, 1.7, 7), color: shade(T.trunk, 0.82), colorTop: T.trunk, position: [0, 0.85, 0] },
+        { geo: cyl(0.09, 0.13, 0.7, 5), color: T.trunk, position: [0.38, 1.55, 0.1], rotation: [0, 0, -0.7] },
+        { geo: ico(1.2), color: c.lo, colorTop: c.hi, position: [-0.08, 2.55, 0], scale: [1.2, 0.88, 1.2], blob: 0.15, seed: 51 },
+        { geo: ico(0.62), color: c.lo, colorTop: c.hi, position: [0.95, 2.05, 0.24], blob: 0.1, seed: 52 },
+        { geo: ico(0.55), color: c.lo, colorTop: c.hi, position: [-0.9, 2.1, -0.3], blob: 0.09, seed: 53 },
+        { geo: ico(0.6), color: c.lo, colorTop: c.hi, position: [0.05, 3.3, 0.05], scale: [1, 0.8, 1], blob: 0.09, seed: 54 },
       )
+      if (season !== 'winter') {
+        const apples: Array<[number, number, number]> = [
+          [0.85, 2.5, 0.6], [-0.75, 2.35, 0.62], [0.2, 2.05, -0.95], [-0.35, 3.0, -0.5],
+        ]
+        for (let i = 0; i < apples.length; i++) {
+          parts.push({ geo: sph(0.11, 8, 6), color: '#D94F3D', colorTop: '#F0705C', position: apples[i] })
+        }
+      }
       swayAmp = 0.03
       swayFreq = 0.85
       break
@@ -442,6 +503,25 @@ function buildProp(type: string, season: Season): PropBuild {
         { geo: sph(0.13, 7, 5), color: T.canopySummerInner, colorTop: T.canopySummer, position: [-0.05, 0.14, 0.18], scale: [1, 0.25, 0.7], rotation: [0, 0.6, 0] },
         { geo: sph(0.11, 7, 5), color: T.canopySummerInner, colorTop: T.canopySummer, position: [-0.15, 0.13, -0.4], scale: [1, 0.25, 0.7], rotation: [0, -0.8, 0] },
       )
+      // cozy garden fence around the patch (posts + two rails per side)
+      const fw = 1.05, fd = 0.82 // half extents
+      const postXs = [-fw, 0, fw]
+      const fenceCol = shade('#C89468', 0.95)
+      const fenceTop = '#DDB088'
+      for (const px of postXs) {
+        for (const pz of [-fd, fd]) {
+          parts.push({ geo: box(0.09, 0.42, 0.09), color: fenceCol, colorTop: fenceTop, position: [px, 0.21, pz] })
+        }
+      }
+      for (const pz of [-fd, fd]) {
+        parts.push({ geo: box(fw * 2 + 0.09, 0.07, 0.05), color: fenceCol, colorTop: fenceTop, position: [0, 0.3, pz] })
+      }
+      for (const px of [-fw, fw]) {
+        parts.push(
+          { geo: box(0.09, 0.42, 0.09), color: fenceCol, colorTop: fenceTop, position: [px, 0.21, 0] },
+          { geo: box(0.05, 0.07, fd * 2 + 0.09), color: fenceCol, colorTop: fenceTop, position: [px, 0.3, 0] },
+        )
+      }
       swayAmp = 0.012
       swayFreq = 1.2
       break

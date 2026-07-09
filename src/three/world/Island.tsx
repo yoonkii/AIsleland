@@ -5,8 +5,8 @@ import { useRef } from 'react'
 import type { JSX } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
-import { islandGeometry, rockGeometry } from './islandGeometry'
-import { meringueVertexMat, miniIslandMat, soilSkirtMat } from './worldMaterials'
+import { voxelIslandGeometry, voxelRockGeometry } from './voxelIsland'
+import { meringueVertexMat } from './worldMaterials'
 
 const ROCKS = [
   { radius: 7.2, phase: 0.0, baseY: -7.6, scale: 0.8 },
@@ -34,12 +34,7 @@ export function Island(): JSX.Element {
 
   return (
     <group>
-      <mesh geometry={islandGeometry()} material={meringueVertexMat} castShadow receiveShadow />
-
-      {/* soil skirt just inside the cliff: noise gaps show earth, not void */}
-      <mesh position-y={-1.55} material={soilSkirtMat}>
-        <cylinderGeometry args={[12.2, 8.8, 2.2, 32, 1]} />
-      </mesh>
+      <mesh geometry={voxelIslandGeometry()} material={meringueVertexMat} castShadow receiveShadow />
 
       {/* orbiting rock chunks under the island */}
       <group ref={orbitRef}>
@@ -49,19 +44,19 @@ export function Island(): JSX.Element {
             ref={(m) => {
               rockRefs.current[i] = m
             }}
-            geometry={rockGeometry()}
+            geometry={voxelRockGeometry()}
             material={meringueVertexMat}
             position={[Math.sin(r.phase) * r.radius, r.baseY, Math.cos(r.phase) * r.radius]}
-            scale={[r.scale, r.scale * 0.85, r.scale * 1.1]}
-            rotation={[r.phase, r.phase * 1.7, 0]}
+            scale={[r.scale * 1.3, r.scale * 1.1, r.scale * 1.4]}
+            rotation={[0, r.phase * 1.7, 0]}
           />
         ))}
       </group>
 
       {/* distant mini-island silhouette on the horizon, azimuth +120deg */}
       <mesh
-        geometry={islandGeometry()}
-        material={miniIslandMat}
+        geometry={voxelIslandGeometry()}
+        material={meringueVertexMat}
         position={[Math.sin(2.1) * 55, -6, Math.cos(2.1) * 55]}
         scale={0.4}
         rotation-y={1.2}
