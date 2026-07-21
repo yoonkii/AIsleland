@@ -8,6 +8,7 @@
 
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { useFrame, useThree } from '@react-three/fiber'
 import { CELEBRATION_COLORS, PALETTE } from '../../design/tokens'
 import { useGameStore } from '../../state/gameStore'
@@ -19,9 +20,11 @@ import { daylight } from '../world/skyColors'
 
 const QUEST_MS = 3200
 const LEVELUP_MS = 4500
+const RAIN_MS = 4200
 const CONFETTI_N = 40
 const DUST_N = 12
 const MOTE_N = 5
+const RAIN_N = 240
 
 function sfx(name: string) {
   window.dispatchEvent(new CustomEvent('aisleland-sfx', { detail: { name } }))
@@ -79,6 +82,25 @@ export function CelebrationDirector() {
   const moteFrom = useMemo(() => Array.from({ length: MOTE_N }, () => new THREE.Vector3()), [])
   const moteTo = useMemo(() => Array.from({ length: MOTE_N }, () => new THREE.Vector3()), [])
   const moteMid = useMemo(() => Array.from({ length: MOTE_N }, () => new THREE.Vector3()), [])
+  const rain = useRef<THREE.InstancedMesh>(null)
+  const rainbow = useRef<THREE.Mesh>(null)
+  const rainSeeds = useMemo(() => {
+    // deterministic scatter over the island top
+    const arr = new Float32Array(RAIN_N * 3)
+    let h = 1779033703
+    const rnd = () => {
+      h = Math.imul(h ^ (h >>> 16), 2246822507)
+      return ((h >>> 0) % 10000) / 10000
+    }
+    for (let i = 0; i < RAIN_N; i++) {
+      const a = rnd() * Math.PI * 2
+      const r = Math.sqrt(rnd()) * 11.5
+      arr[i * 3] = Math.cos(a) * r
+      arr[i * 3 + 1] = Math.sin(a) * r
+      arr[i * 3 + 2] = rnd() // phase
+    }
+    return arr
+  }, [])
   // delivery props
   const plane = useRef<THREE.Mesh>(null)
   const drop = useRef<THREE.Mesh>(null)
@@ -96,6 +118,8 @@ export function CelebrationDirector() {
     splash: new THREE.CircleGeometry(0.6, 24),
     cone: new THREE.ConeGeometry(1.4, 5, 24, 1, true),
     domino: new THREE.PlaneGeometry(0.9, 0.9),
+    rain: new THREE.PlaneGeometry(0.035, 0.55),
+    rainbow: rainbowGeometry(),
   }), [])
 
   const mats = useMemo(() => ({
@@ -110,11 +134,15 @@ export function CelebrationDirector() {
     splash: new THREE.MeshBasicMaterial({ color: '#7EA8F8', transparent: true, depthWrite: false }),
     cone: new THREE.MeshBasicMaterial({ color: '#FFF6D8', transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
     domino: new THREE.MeshBasicMaterial({ color: PALETTE.grassHi, transparent: true, side: THREE.DoubleSide, depthWrite: false }),
+    rain: new THREE.MeshBasicMaterial({ color: PALETTE.rain, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide }),
+    // normal blending — additive washes the pastel bands to white against the sky
+    rainbow: new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }),
   }), [])
 
   function hideAll() {
     for (const m of [confetti.current, dust.current, ring.current, shock1.current, shock2.current, shock3.current,
-      plane.current, drop.current, splash.current, cone.current, domino.current, ...motes.current]) {
+      plane.current, drop.current, splash.current, cone.current, domino.current, rain.current, rainbow.current,
+      ...motes.current]) {
       if (m) m.visible = false
     }
   }
@@ -150,10 +178,9 @@ export function CelebrationDirector() {
       motesPlayed: Array.from({ length: MOTE_N }, () => false),
       returned: false,
     }
-    useGameStore.getState().requestFocus(ev.kind === 'quest'
-      ? [target.x, target.y, target.z]
-      : [0, 1.0, 0])
-    sfx(ev.kind === 'quest' ? 'quest_complete' : 'levelup')
+    if (ev.kind === 'quest') useGameStore.getState().requestFocus([target.x, target.y, target.z])
+    else if (ev.kind === 'levelup') useGameStore.getState().requestFocus([0, 1.0, 0])
+    sfx(ev.kind === 'quest' ? 'quest_complete' : ev.kind === 'levelup' ? 'levelup' : 'streak_fire')
 
     // seed particle bursts
     for (let i = 0; i < CONFETTI_N; i++) {
@@ -205,16 +232,18 @@ export function CelebrationDirector() {
 
     const a = active.current
     const t = performance.now() - a.start
-    const total = a.ev.kind === 'quest' ? QUEST_MS : LEVELUP_MS
+    const total = a.ev.kind === 'quest' ? QUEST_MS : a.ev.kind === 'levelup' ? LEVELUP_MS : RAIN_MS
     if (root.current) root.current.position.y = islandBob(performance.now() / 1000)
 
     if (a.ev.kind === 'quest') {
       runDelivery(a, t)
       runLanding(a, t)
       if (t > 2400 && !a.returned) { a.returned = true; s.requestFocus(null) }
-    } else {
+    } else if (a.ev.kind === 'levelup') {
       runLevelup(a, t, dt)
       if (t > 3600 && !a.returned) { a.returned = true; s.requestFocus(null) }
+    } else {
+      runRain(t)
     }
 
     if (t > total) {
@@ -348,6 +377,39 @@ export function CelebrationDirector() {
     confetti.current.instanceMatrix.needsUpdate = true
   }
 
+  // ---------- morning rain ritual: shower + double rainbow ----------
+  function runRain(t: number) {
+    const camYaw = Math.atan2(camera.position.x, camera.position.z)
+    if (rain.current) {
+      rain.current.visible = true
+      const fadeIn = Math.min(1, t / 400)
+      const fadeOut = 1 - THREE.MathUtils.clamp((t - (RAIN_MS - 900)) / 900, 0, 1)
+      mats.rain.opacity = 0.5 * fadeIn * fadeOut
+      const tS = t / 1000
+      for (let i = 0; i < RAIN_N; i++) {
+        const x = rainSeeds[i * 3], z = rainSeeds[i * 3 + 1], ph = rainSeeds[i * 3 + 2]
+        const yy = 8.5 - ((tS * 12 + ph * 8.5) % 8.5)
+        v1.set(x, yy, z)
+        quat.setFromEuler(eul.set(0, camYaw, 0.1))
+        scl.setScalar(1)
+        mat4.compose(v1, quat, scl)
+        rain.current.setMatrixAt(i, mat4)
+      }
+      rain.current.instanceMatrix.needsUpdate = true
+    }
+    if (rainbow.current) {
+      const inK = THREE.MathUtils.clamp((t - 1500) / 1000, 0, 1)
+      const outK = THREE.MathUtils.clamp((t - (RAIN_MS - 700)) / 700, 0, 1)
+      const op = 0.72 * inK * (1 - outK)
+      rainbow.current.visible = op > 0.01
+      mats.rainbow.opacity = op
+      rainbow.current.position.set(0, 0.4, 0)
+      rainbow.current.rotation.y = camYaw
+      const grow = 0.86 + 0.14 * (1 - Math.pow(1 - inK, 3))
+      rainbow.current.scale.setScalar(grow)
+    }
+  }
+
   // ---------- level-up: Island Ascension (camera quake + shockwaves) ----------
   function runLevelup(a: Active, t: number, dt: number) {
     void dt
@@ -397,8 +459,34 @@ export function CelebrationDirector() {
       <mesh ref={drop} geometry={geo.drop} material={mats.drop} visible={false} frustumCulled={false} />
       <mesh ref={splash} geometry={geo.splash} material={mats.splash} visible={false} frustumCulled={false} />
       <mesh ref={cone} geometry={geo.cone} material={mats.cone} visible={false} frustumCulled={false} />
+      <instancedMesh ref={rain} args={[geo.rain, mats.rain, RAIN_N]} visible={false} frustumCulled={false} />
+      <mesh ref={rainbow} geometry={geo.rainbow} material={mats.rainbow} visible={false} frustumCulled={false} />
     </group>
   )
+}
+
+/** Five nested pastel arcs merged into one vertex-colored half-torus fan. */
+function rainbowGeometry(): THREE.BufferGeometry {
+  const bands = [...CELEBRATION_COLORS]
+  const parts: THREE.BufferGeometry[] = []
+  const c = new THREE.Color()
+  for (let i = 0; i < bands.length; i++) {
+    const g = new THREE.TorusGeometry(9.0 - i * 0.3, 0.15, 6, 48, Math.PI).toNonIndexed()
+    c.set(bands[i])
+    const n = g.attributes.position.count
+    const col = new Float32Array(n * 3)
+    for (let j = 0; j < n; j++) {
+      col[j * 3] = c.r
+      col[j * 3 + 1] = c.g
+      col[j * 3 + 2] = c.b
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3))
+    g.deleteAttribute('uv')
+    parts.push(g)
+  }
+  const merged = mergeGeometries(parts, false)
+  for (const p of parts) p.dispose()
+  return merged ?? new THREE.BufferGeometry()
 }
 
 let softDisc: THREE.CanvasTexture | null = null
@@ -431,9 +519,18 @@ function paperPlaneGeometry(): THREE.BufferGeometry {
   return g
 }
 
-// ---------- ambient atmosphere: pollen motes + butterflies (day) ----------
+// ---------- ambient atmosphere: pollen, butterflies, balloon, shooting star ----------
 
 const POLLEN_N = 36
+const BALLOON_PERIOD_S = 240 // one crossing every ~4 minutes of daytime
+const STAR_PERIOD_S = 110
+
+const balloonBodyMat = new THREE.MeshToonMaterial({ color: PALETTE.heart })
+const balloonStripeMat = new THREE.MeshToonMaterial({ color: '#FFF6A5' })
+const balloonBasketMat = new THREE.MeshToonMaterial({ color: '#A9744F' })
+const starMat = new THREE.MeshBasicMaterial({
+  color: '#FFF9E5', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+})
 
 export function AmbientFX() {
   const pollen = useRef<THREE.InstancedMesh>(null)
@@ -443,6 +540,12 @@ export function AmbientFX() {
   const wingR2 = useRef<THREE.Mesh>(null)
   const fly1 = useRef<THREE.Group>(null)
   const fly2 = useRef<THREE.Group>(null)
+  const balloon = useRef<THREE.Group>(null)
+  const star = useRef<THREE.Group>(null)
+  const wished = useRef(-1)
+  const starBurst = useRef<THREE.Mesh>(null)
+  const burstAt = useRef(-1)
+  const burstPending = useRef(false)
 
   const seeds = useMemo(() => {
     const arr: Array<{ x: number; y: number; z: number; ph: number; sp: number }> = []
@@ -508,7 +611,64 @@ export function AmbientFX() {
     }
     for (const w of [wingL.current, wingL2.current]) if (w) w.rotation.y = -flap
     for (const w of [wingR.current, wingR2.current]) if (w) w.rotation.y = Math.PI + flap
+
+    // --- hot-air balloon: a slow crossing every few daytime minutes ---
+    if (balloon.current) {
+      const ct = el % BALLOON_PERIOD_S
+      const crossing = ct < 55 && day > 0.4
+      balloon.current.visible = crossing
+      if (crossing) {
+        const k = ct / 55
+        const wave = Math.floor(el / BALLOON_PERIOD_S) % 2 === 0 ? 1 : -1
+        balloon.current.position.set(
+          (-34 + k * 68) * wave,
+          10.5 + Math.sin(k * Math.PI * 3) * 0.8,
+          -14 + k * 6,
+        )
+      }
+    }
+
+    // --- shooting star at night: click within its moment to make a wish ---
+    if (star.current) {
+      const cycle = Math.floor(el / STAR_PERIOD_S)
+      const st = el % STAR_PERIOD_S
+      const night = day < 0.15
+      const activeStar = night && st < 1.6 && wished.current !== cycle
+      star.current.visible = activeStar
+      if (activeStar) {
+        const k = st / 1.6
+        star.current.position.set(-26 + k * 46, 20 - k * 7, -24 + k * 8)
+        star.current.rotation.z = -0.28
+        starMat.opacity = Math.min(1, k * 6) * (1 - Math.pow(k, 3))
+      }
+      star.current.userData.cycle = cycle
+    }
+    if (burstPending.current) {
+      burstPending.current = false
+      burstAt.current = el
+    }
+    if (starBurst.current) {
+      const bt = el - burstAt.current
+      const bursting = burstAt.current > 0 && bt < 0.9
+      starBurst.current.visible = bursting
+      if (bursting) {
+        starBurst.current.scale.setScalar(0.4 + bt * 4)
+        ;(starBurst.current.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - bt / 0.9)
+      }
+    }
   })
+
+  const onStarClick = (e: { stopPropagation: () => void }) => {
+    e.stopPropagation()
+    const s = star.current
+    if (!s || !s.visible) return
+    wished.current = (s.userData.cycle as number) ?? -1
+    burstPending.current = true
+    if (starBurst.current) starBurst.current.position.copy(s.position)
+    // wishes are always heard
+    sfx('xp_tick')
+    setTimeout(() => sfx('quest_complete'), 180)
+  }
 
   return (
     <group>
@@ -521,6 +681,41 @@ export function AmbientFX() {
         <mesh ref={wingL2} geometry={wingGeo} material={wingMat2} />
         <mesh ref={wingR2} geometry={wingGeo} material={wingMat2} />
       </group>
+
+      {/* hot-air balloon (day, occasional) */}
+      <group ref={balloon} visible={false}>
+        <mesh material={balloonBodyMat}>
+          <sphereGeometry args={[1.15, 14, 12]} />
+        </mesh>
+        <mesh material={balloonStripeMat} scale={[1.02, 0.55, 1.02]}>
+          <sphereGeometry args={[1.15, 14, 10]} />
+        </mesh>
+        <mesh material={balloonBodyMat} position={[0, -1.15, 0]}>
+          <coneGeometry args={[0.55, 0.8, 10]} />
+        </mesh>
+        <mesh material={balloonBasketMat} position={[0, -1.95, 0]}>
+          <boxGeometry args={[0.55, 0.42, 0.55]} />
+        </mesh>
+      </group>
+
+      {/* shooting star (night, wish on click) */}
+      <group ref={star} visible={false} onClick={onStarClick}>
+        <mesh material={starMat}>
+          <planeGeometry args={[3.2, 0.14]} />
+        </mesh>
+        <mesh material={starMat} position={[1.5, 0, 0]}>
+          <circleGeometry args={[0.22, 8]} />
+        </mesh>
+        {/* generous invisible hit target — it is fast and far away
+            (opacity 0 still raycasts; visible={false} would not) */}
+        <mesh position={[1.2, 0, 0]}>
+          <sphereGeometry args={[2.6, 6, 6]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      </group>
+      <mesh ref={starBurst} visible={false} material={starMat.clone()}>
+        <circleGeometry args={[0.6, 16]} />
+      </mesh>
     </group>
   )
 }

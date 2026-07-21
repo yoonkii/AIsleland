@@ -14,6 +14,9 @@ import { updateGlobalUniforms } from '../materials'
 import { islandBob, islandRoll } from '../islandMotion'
 import { skyHorizonTrack } from './skyColors'
 import { Island } from './Island'
+import { StreamFlow } from './StreamFlow'
+import { Bridge } from './Bridge'
+import { Mailbox } from './Mailbox'
 import { Waterfalls } from './Waterfalls'
 import { SkySea } from './SkySea'
 import { Sky } from './Sky'
@@ -68,6 +71,9 @@ export function World(): JSX.Element {
       {/* everything below rides the island bob/roll */}
       <group ref={islandRef}>
         <Island />
+        <StreamFlow />
+        <Bridge />
+        <Mailbox />
         <Waterfalls />
         <GrassTufts />
         <RuneRing />

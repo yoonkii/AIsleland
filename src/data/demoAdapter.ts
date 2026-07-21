@@ -21,6 +21,9 @@ interface DemoSave {
   critters: CritterInstance[]
   questCursor: number
   activeQuests: Quest[]
+  /** toDateString() of the last completion — first quest of a day rains. */
+  lastQuestDay?: string
+  islandName?: string
 }
 
 const QUEST_POOL: Array<Pick<Quest, 'source' | 'title' | 'difficulty' | 'xpReward' | 'rewardType'>> = [
@@ -106,12 +109,23 @@ export function createDemoAdapter(): DataAdapter {
       while (save.level < 10 && save.xp >= LEVEL_THRESHOLDS[save.level]) save.level++
       save.streakCount++
 
+      const today = new Date().toDateString()
+      const firstOfDay = save.lastQuestDay !== today
+      save.lastQuestDay = today
+
       const unlocked = unlocksUpTo(save.level)
       const { assetId, critterId } = grantReward(save, quest.rewardType, unlocked)
       persist()
       push()
 
       const s = store.getState()
+      if (firstOfDay) {
+        s.enqueueCelebration({
+          kind: 'rain',
+          id: `cel-rain-${Date.now()}`,
+          streakCount: save.streakCount,
+        })
+      }
       s.enqueueCelebration({
         kind: 'quest',
         id: `cel-${quest.id}`,

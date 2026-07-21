@@ -58,6 +58,17 @@ export function CameraRig() {
     cam.updateProjectionMatrix()
   }, [camera])
 
+  // Opening reveal: start high and far, then one slow dolly into the hero
+  // framing — production value lives in the first three seconds. The flight
+  // itself is armed from useFrame so OrbitControls is guaranteed to exist.
+  const introPending = useRef(true)
+  useEffect(() => {
+    const target = new THREE.Vector3(...CAMERA.target)
+    sphericalPos(72, 30 * DEG, (-95) * DEG, target, scratchPos)
+    camera.position.copy(scratchPos)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, [])
+
   // Track user input for idle drift
   useEffect(() => {
     const bump = () => { lastInput.current = Date.now() }
@@ -89,6 +100,13 @@ export function CameraRig() {
     const controls = controlsRef.current
     if (!controls) return
     const s = useGameStore.getState()
+
+    if (introPending.current) {
+      introPending.current = false
+      scratchTarget.set(CAMERA.target[0], CAMERA.target[1], CAMERA.target[2])
+      sphericalPos(CAMERA.defaultRadius, CAMERA.defaultPolarDeg * DEG, CAMERA.defaultAzimuthDeg * DEG, scratchTarget, scratchPos)
+      startFlight(scratchPos, scratchTarget, 2600)
+    }
 
     // --- focus requests (celebrations, double-clicks) ---
     if (s.focusToken !== prevFocusToken.current) {

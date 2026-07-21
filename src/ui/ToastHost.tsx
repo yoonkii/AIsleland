@@ -9,6 +9,7 @@ interface Toast {
 /** Small non-celebration notifications (a new quest flew in). */
 export function ToastHost() {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const photoMode = useGameStore((s) => s.photoMode)
 
   useEffect(() => {
     // Only quests created after this session opened get a toast — the initial
@@ -39,7 +40,7 @@ export function ToastHost() {
     }
   }, [])
 
-  if (toasts.length === 0) return null
+  if (toasts.length === 0 || photoMode) return null
 
   return (
     <div className="toast-host">

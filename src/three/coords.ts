@@ -54,8 +54,12 @@ export const WATERFALL_AZIMUTHS = [2.62, 2.62 + Math.PI] as const
 export function isWaterChannel(x: number, z: number): boolean {
   const r = Math.hypot(x, z)
   if (r < 6) return false
-  for (const a of WATERFALL_AZIMUTHS) {
-    if ((x * Math.sin(a) + z * Math.cos(a)) / r > 0.994) return true
+  for (let i = 0; i < WATERFALL_AZIMUTHS.length; i++) {
+    const a = WATERFALL_AZIMUTHS[i]
+    const c = (x * Math.sin(a) + z * Math.cos(a)) / r
+    if (c > 0.994) return true
+    // spring pond: the first channel widens into a small pool at its source
+    if (i === 0 && r < 8.1 && c > 0.962) return true
   }
   return false
 }

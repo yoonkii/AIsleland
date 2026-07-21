@@ -42,7 +42,10 @@ const FILM_FILTERS: Record<string, string> = {
   mono: 'saturate(.3) sepia(.14) contrast(1.05) brightness(1.05)',
 }
 
-/** Listens for 'aisleland-snapshot' and downloads the canvas as a postcard PNG. */
+/**
+ * Listens for 'aisleland-snapshot' and downloads a framed 1080x1350 postcard
+ * (Instagram 4:5): cover-cropped scene, cream border, caption + level stamp.
+ */
 function SnapshotListener() {
   const gl = useThree((s) => s.gl)
   useEffect(() => {
@@ -50,20 +53,61 @@ function SnapshotListener() {
       try {
         const src = gl.domElement
         const filterKey = document.querySelector('.game-root')?.getAttribute('data-filter')
-        let url: string
-        if (filterKey && FILM_FILTERS[filterKey]) {
-          const out = document.createElement('canvas')
-          out.width = src.width
-          out.height = src.height
-          const ctx = out.getContext('2d')!
-          ctx.filter = FILM_FILTERS[filterKey]
-          ctx.drawImage(src, 0, 0)
-          url = out.toDataURL('image/png')
-        } else {
-          url = src.toDataURL('image/png')
-        }
+        const W = 1080, H = 1350, BORDER = 36
+        const out = document.createElement('canvas')
+        out.width = W
+        out.height = H
+        const ctx = out.getContext('2d')!
+
+        // cream card + soft inner frame
+        ctx.fillStyle = '#FFF9EF'
+        ctx.fillRect(0, 0, W, H)
+
+        // cover-crop the scene into the frame
+        const iw = W - BORDER * 2
+        const ih = H - BORDER * 2 - 96 // caption strip at the bottom
+        const scale = Math.max(iw / src.width, ih / src.height)
+        const sw = iw / scale, sh = ih / scale
+        const sx = (src.width - sw) / 2, sy = (src.height - sh) / 2
+        if (filterKey && FILM_FILTERS[filterKey]) ctx.filter = FILM_FILTERS[filterKey]
+        ctx.drawImage(src, sx, sy, sw, sh, BORDER, BORDER, iw, ih)
+        ctx.filter = 'none'
+        ctx.strokeStyle = '#E8D5C4'
+        ctx.lineWidth = 3
+        ctx.strokeRect(BORDER - 1.5, BORDER - 1.5, iw + 3, ih + 3)
+
+        // caption
+        const s = useGameStore.getState()
+        const name = s.islandName || 'My Isle'
+        ctx.fillStyle = '#5C5248'
+        ctx.font = '600 34px Fredoka, Nunito, sans-serif'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(`Day ${Math.max(1, s.island.streakCount)} on ${name}`, BORDER + 6, H - 66)
+        ctx.fillStyle = '#8A7E72'
+        ctx.font = '600 24px Nunito, sans-serif'
+        ctx.textAlign = 'right'
+        ctx.fillText('AIsleland · your work grows an island', W - BORDER - 6, H - 66)
+        ctx.textAlign = 'left'
+
+        // level stamp
+        const cxs = W - BORDER - 52, cys = BORDER + 52
+        ctx.beginPath()
+        ctx.arc(cxs, cys, 42, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(255,249,239,0.92)'
+        ctx.fill()
+        ctx.strokeStyle = '#E07A6E'
+        ctx.lineWidth = 3
+        ctx.stroke()
+        ctx.fillStyle = '#E07A6E'
+        ctx.font = '700 15px Nunito, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText('LEVEL', cxs, cys - 12)
+        ctx.font = '700 34px Fredoka, Nunito, sans-serif'
+        ctx.fillText(String(s.island.level), cxs, cys + 12)
+        ctx.textAlign = 'left'
+
         const a = document.createElement('a')
-        a.href = url
+        a.href = out.toDataURL('image/png')
         a.download = `aisleland-postcard-${new Date().toISOString().slice(0, 10)}.png`
         a.click()
         window.dispatchEvent(new CustomEvent('aisleland-sfx', { detail: { name: 'ui_tap' } }))

@@ -184,15 +184,20 @@ localStorage ◀──persist── demoAdapter ◀──completeQuest()── Q
 
 ## 7. Where the vision lives / roadmap
 
-- `docs/GAME_DESIGN.md` — the north star. **§13 lists what v1 intentionally
-  cut**; these are the natural next features, roughly in value order:
-  1. **Owl mail delivery** (quest arrival as a physical event, not a toast)
-  2. **Critter friendship/affinity** (cat→gmail etc., heart levels — needs a
+- `docs/GAME_DESIGN.md` — the north star. Since the initial v1 scope cut
+  (§13), the following have SHIPPED: owl mail delivery + mailbox (flag up
+  while quests wait, click opens the journal), morning-rain streak ritual
+  (rain + pastel rainbow on the first completion of each day, both modes),
+  ambient micro-events (day hot-air balloon, night shooting star with a
+  click-to-wish burst), creek pond + arched bridge + animated stream surface,
+  island naming (HUD click-to-edit, persisted), framed 1080×1350 postcard
+  export with film filter + level stamp + caption, and an opening camera
+  reveal. Still open, roughly in value order:
+  1. **Critter friendship/affinity** (cat→gmail etc., heart levels — needs a
      small server schema addition; "do my email" becomes "feed my cat")
-  3. **Pocket + seed-toss placement** (player-controlled planting)
-  4. **Sunday Postcard Retro** (weekly auto-tour + shareable stat card)
-  5. **Streak morning-rain ritual** (§6.4) and ambient micro-events (§6.7)
-  6. Postcard 1080×1350 framed export; share prompt after level-ups
+  2. **Pocket + seed-toss placement** (player-controlled planting)
+  3. **Sunday Postcard Retro** (weekly auto-tour + shareable stat card)
+  4. Share prompt auto-fired after level-ups; wish → +XP through the adapter
 - `docs/VISUAL_PLAYBOOK.md` — remaining un-applied polish items: height-fog
   shader patch, god-ray cones at golden hour, paper-grain finishing effect,
   pitch-adaptive world curve, per-instance hue jitter on props.

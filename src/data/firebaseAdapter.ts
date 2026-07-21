@@ -22,6 +22,7 @@ export async function createFirebaseAdapter(
   const timers = new Set<ReturnType<typeof setTimeout>>()
   const knownQuests = new Map<string, Quest>()
   let prevLevel: number | null = null
+  let prevCompletedDay: string | null = null
   let latestAssets: PlacedAsset[] = []
   let disposed = false
 
@@ -29,6 +30,20 @@ export async function createFirebaseAdapter(
   await getOrCreateIsland(uid)
 
   subs.push(subscribeToIsland(uid, (island) => {
+    // first completion of a new day → morning rain ritual
+    const day = island.lastQuestCompletedAt
+      ? new Date(island.lastQuestCompletedAt).toDateString()
+      : null
+    if (prevCompletedDay !== null && day !== null && day !== prevCompletedDay) {
+      store.getState().enqueueCelebration({
+        kind: 'rain',
+        id: `cel-rain-${island.lastQuestCompletedAt}`,
+        streakCount: island.streakCount,
+      })
+    }
+    if (day !== null) prevCompletedDay = day
+    else if (prevCompletedDay === null) prevCompletedDay = 'never'
+
     store.getState().setIsland({
       level: island.level,
       xp: island.xp,

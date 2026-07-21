@@ -326,8 +326,9 @@ export function tuftGeometry(): THREE.BufferGeometry {
   if (!tuftGeo) {
     const m = new THREE.Matrix4()
     const e = new THREE.Euler()
+    // blocky sprouts to match the voxel terrain (tiny leaning slabs)
     const blade = (h: number, tiltX: number, tiltZ: number, x: number, z: number) => {
-      const g = new THREE.ConeGeometry(0.055, h, 5, 1, false)
+      const g = new THREE.BoxGeometry(0.09, h, 0.09)
       g.translate(0, h / 2, 0)
       e.set(tiltX, 0, tiltZ)
       m.makeRotationFromEuler(e).setPosition(x, 0, z)
@@ -335,9 +336,9 @@ export function tuftGeometry(): THREE.BufferGeometry {
       return g
     }
     const parts = [
-      blade(0.42, 0.14, -0.1, 0, 0),
-      blade(0.32, -0.22, 0.16, 0.07, 0.05),
-      blade(0.28, 0.1, 0.3, -0.07, -0.04),
+      blade(0.34, 0.14, -0.1, 0, 0),
+      blade(0.26, -0.22, 0.16, 0.09, 0.05),
+      blade(0.22, 0.1, 0.3, -0.08, -0.05),
     ]
     for (const p of parts) p.deleteAttribute('uv')
     const merged = mergeGeometries(parts, false)

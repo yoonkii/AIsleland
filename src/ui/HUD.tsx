@@ -11,6 +11,9 @@ const RING_C = 2 * Math.PI * RING_R
 export function HUD({ onSignOut }: { onSignOut: () => void }) {
   const island = useGameStore((s) => s.island)
   const player = useGameStore((s) => s.player)
+  const islandName = useGameStore((s) => s.islandName)
+  const setIslandName = useGameStore((s) => s.setIslandName)
+  const [editing, setEditing] = useState(false)
   const quests = useGameStore((s) => s.quests)
   const muted = useGameStore((s) => s.muted)
   const photoMode = useGameStore((s) => s.photoMode)
@@ -38,7 +41,16 @@ export function HUD({ onSignOut }: { onSignOut: () => void }) {
 
   if (photoMode) return null
 
-  const name = player?.displayName?.split(' ')[0] ?? 'Islander'
+  const fallback = `${player?.displayName?.split(' ')[0] ?? 'Islander'}'s Isle`
+  const shownName = islandName || fallback
+
+  const commitName = (value: string) => {
+    setEditing(false)
+    if (value.trim() && value.trim() !== shownName) {
+      setIslandName(value)
+      sfx('ui_tap')
+    }
+  }
 
   return (
     <>
@@ -58,7 +70,27 @@ export function HUD({ onSignOut }: { onSignOut: () => void }) {
             <span className="hud-level-num">{island.level}</span>
           </div>
           <div className="hud-level-text">
-            <span className="hud-island-name">{name}&apos;s Isle</span>
+            {editing ? (
+              <input
+                className="hud-name-input"
+                defaultValue={shownName}
+                autoFocus
+                maxLength={24}
+                onBlur={(e) => commitName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                  if (e.key === 'Escape') setEditing(false)
+                }}
+              />
+            ) : (
+              <button
+                className="hud-island-name"
+                title="Rename your island"
+                onClick={() => setEditing(true)}
+              >
+                {shownName}
+              </button>
+            )}
             <span className="hud-xp">{island.xp} / {island.xpToNextLevel} xp</span>
           </div>
           {island.streakCount > 0 && (

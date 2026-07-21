@@ -62,6 +62,8 @@ export type CelebrationEvent =
       rewardCritterId: string | null
     }
   | { kind: 'levelup'; id: string; newLevel: number; unlocked: string[] }
+  /** First quest of a new day: the morning rain ritual (rain + rainbow). */
+  | { kind: 'rain'; id: string; streakCount: number }
 
 export const LEVEL_THRESHOLDS = [0, 60, 140, 240, 360, 520, 720, 960, 1240, 1600]
 

@@ -42,6 +42,8 @@ export interface GameState {
   journalOpen: boolean
   muted: boolean
   quality: 'high' | 'low'
+  /** Player-chosen island name (persisted to localStorage). */
+  islandName: string
   /** Arrange mode: id of the asset being moved, or null. */
   arrangingAssetId: string | null
 
@@ -68,6 +70,7 @@ export interface GameState {
   startNextCelebration(): CelebrationEvent | null
   endCelebration(): void
 
+  setIslandName(name: string): void
   setTimeOfDay(t: number): void
   setTimeOverride(t: number | null): void
   setPhotoMode(on: boolean): void
@@ -100,6 +103,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   journalOpen: false,
   muted: false,
   quality: 'high',
+  islandName: loadIslandName(),
   arrangingAssetId: null,
 
   celebration: null,
@@ -147,6 +151,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   endCelebration: () => set({ celebration: null }),
 
+  setIslandName: (name) => {
+    const clean = name.trim().slice(0, 24) || 'My Isle'
+    try { localStorage.setItem('aisleland-island-name', clean) } catch { /* quota */ }
+    set({ islandName: clean })
+  },
   setTimeOfDay: (t) => set({ timeOfDay: ((t % 1) + 1) % 1 }),
   setTimeOverride: (t) => set({ timeOverride: t }),
   setPhotoMode: (on) => set({ photoMode: on, journalOpen: false }),
@@ -161,6 +170,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 /** Effective time of day respecting the photo-mode override. */
 export function effectiveTimeOfDay(s: Pick<GameState, 'timeOfDay' | 'timeOverride'>): number {
   return s.timeOverride ?? s.timeOfDay
+}
+
+function loadIslandName(): string {
+  try { return localStorage.getItem('aisleland-island-name') ?? '' } catch { return '' }
 }
 
 export function clockFraction(date = new Date()): number {

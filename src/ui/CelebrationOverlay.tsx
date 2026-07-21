@@ -25,6 +25,18 @@ export function CelebrationOverlay() {
 
   if (!celebration) return null
 
+  if (celebration.kind === 'rain') {
+    return (
+      <div className="cel-toast cel-rain-toast">
+        <span className="cel-rain-icons">☔️</span>
+        <div className="cel-toast-text">
+          <span className="cel-toast-title">Morning rain — the island remembers you came back</span>
+          <span className="cel-toast-xp">day {celebration.streakCount} streak</span>
+        </div>
+      </div>
+    )
+  }
+
   if (celebration.kind === 'quest') {
     const q = celebration.quest
     return (
