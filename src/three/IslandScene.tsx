@@ -5,6 +5,7 @@ import { DEMO_DAY_SECONDS, DEMO_DAY_START } from '../design/tokens'
 import { World } from './world/World'
 import { Props } from './props/Props'
 import { Critters } from './critters/Critters'
+import { Wildlife } from './critters/Wildlife'
 import { CameraRig } from './camera/CameraRig'
 import { CelebrationDirector, AmbientFX } from './fx/CelebrationDirector'
 import { PostFX } from './fx/PostFX'
@@ -137,6 +138,7 @@ export function IslandScene() {
         <World />
         <Props />
         <Critters />
+        <Wildlife />
         <AmbientFX />
       </Suspense>
       <CameraRig />

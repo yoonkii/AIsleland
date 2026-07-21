@@ -48,7 +48,16 @@ const QUEST_POOL: Array<Pick<Quest, 'source' | 'title' | 'difficulty' | 'xpRewar
 const CRITTER_NAMES: Record<CritterSpecies, string> = {
   'cat': 'Mochi', 'cat-1': 'Latte', 'rabbit': 'Clover', 'rabbit-1': 'Biscuit',
   'small-dog-1': 'Waffle', 'hamster-1': 'Pebble', 'hamster-2': 'Nutmeg',
+  'duck': 'Puddle', 'sheep': 'Cumulus', 'fox': 'Ember', 'bird-1': 'Skye',
 }
+
+/** Demo-only bonus companions (the server's unlock table doesn't know them). */
+const DEMO_BONUS_CRITTERS: Array<{ species: CritterSpecies; level: number }> = [
+  { species: 'duck', level: 4 },
+  { species: 'sheep', level: 5 },
+  { species: 'bird-1', level: 6 },
+  { species: 'fox', level: 7 },
+]
 
 export function createDemoAdapter(): DataAdapter {
   const store = useGameStore
@@ -164,10 +173,11 @@ function grantReward(
   rewardType: RewardType,
   unlocked: string[],
 ): { assetId: string | null; critterId: string | null } {
-  // Character chance: at level 8+ roll a critter the player doesn't own yet.
-  if (rewardType === 'character_chance' && save.level >= 8) {
+  // Character chance: bonus companions from level 4, classic set at level 8+.
+  if (rewardType === 'character_chance' && save.level >= 4) {
     const owned = new Set(save.critters.map((c) => c.species))
     const candidates = (unlocked.filter((t) => t in CRITTER_NAMES) as CritterSpecies[])
+      .concat(DEMO_BONUS_CRITTERS.filter((b) => save.level >= b.level).map((b) => b.species))
       .filter((s) => !owned.has(s))
     if (candidates.length > 0 && Math.random() < 0.6) {
       const species = candidates[Math.floor(Math.random() * candidates.length)]
@@ -239,7 +249,15 @@ function seed(): DemoSave {
       { id: 'seed-2', type: 'flower-2', gridX: 5, gridY: 4, plantedAt: Date.now() - 86400e3, growthStage: 1 },
       { id: 'seed-3', type: 'flower-3', gridX: 3, gridY: 5, plantedAt: Date.now() - 43200e3, growthStage: 1 },
     ],
-    critters: [],
+    // every visitor gets a starter buddy — an island with a cat is never empty
+    critters: [{
+      id: 'starter-cat',
+      species: 'cat',
+      name: 'Mochi',
+      rarity: 'common',
+      home: { x: 4, y: 3 },
+      unlockDate: Date.now(),
+    }],
     questCursor: 3,
     activeQuests: [],
   }

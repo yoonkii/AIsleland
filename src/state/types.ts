@@ -31,6 +31,7 @@ export interface PlacedAsset {
 export type CritterSpecies =
   | 'cat' | 'cat-1' | 'rabbit' | 'rabbit-1' | 'small-dog-1'
   | 'hamster-1' | 'hamster-2'
+  | 'duck' | 'sheep' | 'fox' | 'bird-1'
 
 export interface CritterInstance {
   id: string
@@ -87,4 +88,5 @@ export function unlocksUpTo(level: number): string[] {
 
 export const CRITTER_SPECIES = new Set<string>([
   'cat', 'cat-1', 'rabbit', 'rabbit-1', 'small-dog-1', 'hamster-1', 'hamster-2',
+  'duck', 'sheep', 'fox', 'bird-1',
 ])

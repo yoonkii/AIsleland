@@ -18,12 +18,18 @@ import { PALETTE } from '../../design/tokens'
 interface SpeciesSpec {
   body: string
   belly: string
-  ear: 'cone' | 'long' | 'round'
+  ear: 'cone' | 'long' | 'round' | 'none'
   earColor?: string
   scale: number
   hopHeight: number
   sfx: string
   patch?: string // calico / spot color
+  /** head color when it differs from the body (sheep's dark face) */
+  head?: string
+  /** orange duck/bird bill instead of the button nose */
+  beak?: boolean
+  /** big fluffy tail with a light tip (fox) */
+  tailBush?: boolean
 }
 
 const SPECIES: Record<CritterSpecies, SpeciesSpec> = {
@@ -34,6 +40,10 @@ const SPECIES: Record<CritterSpecies, SpeciesSpec> = {
   'small-dog-1': { body: '#D9B48A', belly: '#F5E8D5', ear: 'round', earColor: '#B98F63', scale: 1.0, hopHeight: 0.45, sfx: 'critter_dog' },
   'hamster-1': { body: '#F2C894', belly: '#FFF3DE', ear: 'round', scale: 0.55, hopHeight: 0.3, sfx: 'critter_hamster' },
   'hamster-2': { body: '#E8E0D5', belly: '#FFFAF2', ear: 'round', scale: 0.55, hopHeight: 0.3, sfx: 'critter_hamster' },
+  'duck': { body: '#FBF3DC', belly: '#FFFDF4', ear: 'none', beak: true, scale: 0.7, hopHeight: 0.35, sfx: 'critter_rabbit' },
+  'sheep': { body: '#F4EEE2', belly: '#FBF8F0', ear: 'round', earColor: '#6B5B50', head: '#8A776A', scale: 1.0, hopHeight: 0.4, sfx: 'critter_dog' },
+  'fox': { body: '#E8935A', belly: '#FFF3E0', ear: 'cone', earColor: '#C9713D', tailBush: true, scale: 0.95, hopHeight: 0.55, sfx: 'critter_cat' },
+  'bird-1': { body: '#7EAED4', belly: '#EAF4FB', ear: 'none', beak: true, scale: 0.45, hopHeight: 0.6, sfx: 'critter_hamster' },
 }
 
 // shared material cache — one meringue per unique hue
@@ -84,6 +94,7 @@ interface Brain {
   heading: number
   blinkAt: number
   emoteUntil: number
+  nextEmoteAt: number
   jumpStart: number
 }
 
@@ -100,7 +111,9 @@ function newBrain(x: number, z: number): Brain {
     hopStart: 0, hopCount: 0, hopsTotal: 0,
     heading: Math.random() * Math.PI * 2,
     blinkAt: 3 + Math.random() * 4,
-    emoteUntil: 0, jumpStart: 0,
+    emoteUntil: 0,
+    nextEmoteAt: 12 + Math.random() * 25,
+    jumpStart: 0,
   }
 }
 
@@ -226,6 +239,12 @@ function CritterMesh({ critter }: { critter: CritterInstance }) {
     if (el > b.blinkAt) {
       b.blinkAt = el + 3 + Math.random() * 4
     }
+
+    // --- spontaneous happy emote (the island talks to itself) ---
+    if (!isNight && el > b.nextEmoteAt) {
+      b.emoteUntil = el + 1.4
+      b.nextEmoteAt = el + 20 + Math.random() * 32
+    }
     const blinkPhase = b.blinkAt - el
     const eyeScaleY = b.mode === 'sleep' ? 0.08 : (blinkPhase > 0 && blinkPhase < 0.12 ? 0.1 : 1)
     if (eyeL.current) eyeL.current.scale.y = eyeScaleY
@@ -277,7 +296,7 @@ function CritterMesh({ critter }: { critter: CritterInstance }) {
         </mesh>
         {/* head */}
         <group position={[0, 0.42 * s, 0.06 * s]}>
-          <mesh material={critterMat(spec.body)} castShadow>
+          <mesh material={critterMat(spec.head ?? spec.body)} castShadow>
             <sphereGeometry args={[0.28 * s, 20, 16]} />
           </mesh>
           {spec.patch && (
@@ -292,10 +311,22 @@ function CritterMesh({ critter }: { critter: CritterInstance }) {
           <mesh ref={eyeR} material={eyeMat} position={[0.1 * s, 0.03 * s, 0.24 * s]}>
             <sphereGeometry args={[0.035 * s, 8, 8]} />
           </mesh>
-          {/* nose */}
-          <mesh material={critterMat('#C98A80')} position={[0, -0.05 * s, 0.27 * s]}>
-            <sphereGeometry args={[0.028 * s, 8, 8]} />
-          </mesh>
+          {/* nose or bill */}
+          {spec.beak ? (
+            <mesh material={critterMat('#E8A45E')} position={[0, -0.03 * s, 0.3 * s]} rotation-x={Math.PI / 2}>
+              <coneGeometry args={[0.07 * s, 0.16 * s, 8]} />
+            </mesh>
+          ) : (
+            <mesh material={critterMat('#C98A80')} position={[0, -0.05 * s, 0.27 * s]}>
+              <sphereGeometry args={[0.028 * s, 8, 8]} />
+            </mesh>
+          )}
+          {/* sheep wool crown */}
+          {spec.head && (
+            <mesh material={critterMat(spec.body)} position={[0, 0.18 * s, -0.04 * s]} scale={[1.1, 0.75, 1.05]}>
+              <sphereGeometry args={[0.24 * s, 12, 10]} />
+            </mesh>
+          )}
           {/* ears */}
           {spec.ear === 'cone' && (
             <>
@@ -329,9 +360,20 @@ function CritterMesh({ critter }: { critter: CritterInstance }) {
           )}
         </group>
         {/* tail */}
-        <mesh material={critterMat(spec.belly)} position={[0, 0.05 * s, -0.32 * s]}>
-          <sphereGeometry args={[0.1 * s, 10, 10]} />
-        </mesh>
+        {spec.tailBush ? (
+          <group position={[0, 0.12 * s, -0.4 * s]} rotation-x={0.7}>
+            <mesh material={critterMat(spec.body)}>
+              <sphereGeometry args={[0.15 * s, 10, 10]} />
+            </mesh>
+            <mesh material={critterMat(spec.belly)} position={[0, -0.16 * s, 0]} scale={[0.75, 0.7, 0.75]}>
+              <sphereGeometry args={[0.14 * s, 10, 10]} />
+            </mesh>
+          </group>
+        ) : (
+          <mesh material={critterMat(spec.belly)} position={[0, 0.05 * s, -0.32 * s]}>
+            <sphereGeometry args={[0.1 * s, 10, 10]} />
+          </mesh>
+        )}
       </group>
       <sprite ref={heart} visible={false} position-y={1.3 * s}>
         <spriteMaterial map={heartTex()} transparent depthWrite={false} />
