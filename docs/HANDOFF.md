@@ -1,6 +1,6 @@
 # AIsleland — Handoff Document
 
-_Last updated: 2026-07-09 · Branch: `claude/workspace-game-3d-revamp-i7e3zz`_
+_Last updated: 2026-07-09 (rev 2, post living-island pass) · Branch: `claude/workspace-game-3d-revamp-i7e3zz` · HEAD: `7cf5f5c`_
 
 AIsleland is a cozy 3D healing game: completing real Google Workspace tasks
 (Gmail, Docs, Sheets, Slides, Calendar) grows a floating voxel island. This
@@ -12,22 +12,35 @@ document is everything a new developer (or agent) needs to take over.
 
 - **Full 3D revamp shipped.** The legacy PixiJS 2D view is gone. The game is a
   React 19 + @react-three/fiber v9 scene: a MagicaVoxel-style terraced island
-  with a creek that spills over two waterfalls, plush Pokémon-cozy trees,
-  procedural buildings, wandering critters, real-time day/night, celebration
-  choreography, photo mode with postcard export, and a full Web Audio
-  soundscape. **Zero external assets** — every mesh, texture and sound is
-  procedural (ElevenLabs files optionally override the synth).
+  with a creek (spring pond → arched bridge → twin waterfalls), plush
+  Pokémon-cozy trees, procedural buildings, real-time day/night, celebration
+  choreography, photo mode, and a full Web Audio soundscape.
+  **Zero external assets** — every mesh, texture and sound is procedural
+  (ElevenLabs files optionally override the synth).
+- **The island is alive** (no unlocks needed): ducks paddle the creek,
+  songbirds fly in and peck around, gulls circle offshore, fish jump from the
+  sea, bees work the flowers, a hot-air balloon crosses by day and a
+  clickable wish-star streaks by at night. Every new quest is delivered by an
+  **owl** to a mailbox whose flag stays up while quests wait. The **first
+  completion of each day** triggers a morning-rain ritual with a pastel
+  rainbow (streak reward). 11 collectible companion species wander with tiny
+  FSMs (idle/wander/sit/groom/sleep/jump), emote spontaneously, and react to
+  clicks. Demo players start with a cat.
 - **Two play modes:**
-  - **Demo** (default, no config): mock quests trickle in, everything persists
-    to `localStorage` (`aisleland-demo-v2`), a full day/night cycle loops every
-    6 minutes. This is the instant-play viral entry point.
+  - **Demo** (default, zero config): mock quests trickle in, persistence in
+    `localStorage` (`aisleland-demo-v2`), a day/night cycle every 6 minutes,
+    bonus companions (duck/sheep/bird/fox) from level 4.
   - **Firebase**: Google sign-in → Cloud Functions watch Gmail/Drive/Calendar
-    and write quests to Firestore; completing a quest calls the `completeQuest`
+    and write quests to Firestore; completing calls the `completeQuest`
     callable which awards XP and plants a reward.
+- **Player-facing extras**: island naming (click the HUD name), framed
+  1080×1350 postcard export (film filter, level stamp, "Day N on {isle}"
+  caption), opening camera reveal, photo mode with three curated orbits and a
+  time-of-day slider.
 - **Verified**: `tsc` clean, `eslint` clean, `vite build` clean, demo flow
-  smoke-tested end-to-end in headless Chromium, visuals screenshot-reviewed at
-  morning/golden/night across ~8 polish iterations, plus an adversarial
-  multi-agent code review whose confirmed findings were all fixed.
+  smoke-tested in headless Chromium, every feature screenshot-verified
+  (including a precise celebration-timeline measurement), plus an earlier
+  adversarial multi-agent review whose confirmed findings were all fixed.
 
 ## 2. Run / build / deploy
 
@@ -42,14 +55,12 @@ npm run sfx        # generate ElevenLabs SFX into public/audio/ (needs ELEVENLAB
 ```
 
 - **Env** (`.env`, see `.env.example`): `VITE_FIREBASE_*` for real mode;
-  everything runs without it (demo only). `ELEVENLABS_API_KEY` is only read by
-  `scripts/generate-sfx.mjs` at build-tool time, never shipped to the client.
-- **Firebase mode setup**: create a Firebase project (Google auth + Firestore),
-  fill `.env`, deploy `firestore.rules` + `firestore.indexes.json`, then deploy
-  `functions/` (Gmail watch needs a GCP Pub/Sub topic — see
-  `functions/src/setup-gmail-watch.ts`).
-- There is **no hosting/CI config** in the repo yet. `vite build` outputs
-  `dist/`; any static host works (Firebase Hosting is the natural choice).
+  everything runs without it (demo only). `ELEVENLABS_API_KEY` is used only by
+  `scripts/generate-sfx.mjs`, never shipped to the client.
+- **Firebase mode setup**: Firebase project (Google auth + Firestore), fill
+  `.env`, deploy `firestore.rules` + indexes, deploy `functions/` (Gmail
+  watch needs a GCP Pub/Sub topic — see `functions/src/setup-gmail-watch.ts`).
+- **No hosting/CI config yet.** `vite build` → `dist/`; any static host works.
 
 ## 3. Architecture
 
@@ -58,40 +69,50 @@ src/
   main.tsx, App.tsx        session bootstrap: login → adapter → game shell
   state/
     gameStore.ts           zustand store — THE hub (session, island, quests,
-                           celebration queue, UI flags, camera focus requests)
-    types.ts               shared types + LEVEL_THRESHOLDS/LEVEL_UNLOCKS tables
+                           celebration queue, islandName, UI flags, camera focus)
+    types.ts               shared types, CelebrationEvent (quest|levelup|rain),
+                           LEVEL_THRESHOLDS/LEVEL_UNLOCKS, CRITTER_SPECIES
   data/
-    demoAdapter.ts         localStorage-backed fake backend (quests, XP, rewards)
-    firebaseAdapter.ts     Firestore subscriptions → store; completeQuest callable
+    demoAdapter.ts         localStorage backend: quests, XP, rewards, streak day
+                           tracking (rain ritual), demo-only bonus companions
+    firebaseAdapter.ts     Firestore subs → store; completeQuest callable;
+                           rain ritual derived from lastQuestCompletedAt day flip
   firebase/                auth (Google OAuth + GWS scopes), config, firestore IO
   design/tokens.ts         every color/timing/camera constant (single source)
   three/
-    IslandScene.tsx        <Canvas> composition + ClockSync + postcard snapshot
-    coords.ts              ★ world contract: 8×7 grid, VOXEL size, terrainHeight,
-                           island boundary, waterfall channels
-    materials.ts           ★ "meringue" toon material factory (3-band ramp +
-                           fresnel rim + curved-world bend) + global uniforms
-    islandMotion.ts        deterministic island bob/roll (shared, uncoupled)
-    world/                 voxelIsland (terrain mesher), Sky, SkySea, Waterfalls,
-                           Clouds, Lights (keyframed rig), Fireflies, GrassTufts,
-                           RuneRing (diegetic XP), skyColors (OKLab tracks)
-    props/                 recipes.ts (all 20 prop types as merged vertex-colored
-                           geometry), Props/Prop (pop-in, hover, arrange mode)
-    critters/Critters.tsx  7 species, per-critter FSM (idle/wander/sit/groom/
-                           sleep/jump), heart emotes
-    fx/                    CelebrationDirector (Bloom Burst + level-up quake,
-                           pooled particles) + AmbientFX, PostFX (composer)
-    camera/CameraRig.tsx   OrbitControls + idle drift + focus flights + photo orbits
-  ui/                      DOM overlay: HUD, QuestJournal, CelebrationOverlay,
-                           PhotoModeBar, LoginScreen, ToastHost + ui.css
-  audio/SoundManager.ts    dual-source SFX (files → synth fallback), ambience,
-                           generative pentatonic music, celebration ducking
-functions/src/             Cloud Functions (pre-existing): quest generation from
-                           Gmail/Drive/Calendar webhooks, completeQuest callable,
-                           island-manager (XP/level/asset placement)
+    IslandScene.tsx        <Canvas> composition, ClockSync, framed-postcard export
+    coords.ts              ★ world contract: 8×7 grid, VOXEL size, terraced
+                           terrainHeight, boundaryRadius, waterfall channels +
+                           spring pond (isWaterChannel), WATERFALL_AZIMUTHS
+    materials.ts           ★ meringue toon factory (3-band ramp + rim + curved
+                           world) + global uniforms
+    islandMotion.ts        deterministic island bob/roll shared by all modules
+    world/                 voxelIsland (terrain mesher), StreamFlow (animated
+                           water ribbon), Bridge, Mailbox (+ owl delivery),
+                           Sky, SkySea, Waterfalls, Clouds, Lights, Fireflies,
+                           GrassTufts, RuneRing, skyColors (OKLab tracks)
+    props/                 recipes.ts (20 prop types: plush trees, voxel pine,
+                           fenced pumpkin patch…), Props/Prop (pop-in, hover,
+                           arrange mode)
+    critters/
+      Critters.tsx         11 companion species (specs: ears/bill/head/bushy
+                           tail), FSM + blink + spontaneous & click emotes
+      Wildlife.tsx         ambient life: ducks, songbirds, gulls, fish, bees
+    fx/                    CelebrationDirector (Bloom Burst, level-up quake,
+                           rain+rainbow ritual, balloon, wish-star, pollen,
+                           butterflies) + PostFX (composer)
+    camera/CameraRig.tsx   OrbitControls + intro reveal + idle drift + focus
+                           flights + photo orbits
+  ui/                      HUD (editable island name), QuestJournal,
+                           CelebrationOverlay (incl. rain chip), PhotoModeBar,
+                           LoginScreen, ToastHost (photo-mode aware) + ui.css
+  audio/SoundManager.ts    dual-source SFX (files → synth), ambience by time of
+                           day, generative music, celebration ducking
+functions/src/             Cloud Functions (legacy-stable): quest generation,
+                           completeQuest callable, island-manager placement
 scripts/generate-sfx.mjs   ElevenLabs sound-generation batch script
-docs/GAME_DESIGN.md        full design doc (§13 = v1 scope cuts)
-docs/VISUAL_PLAYBOOK.md    researched visual techniques + global grade settings
+docs/GAME_DESIGN.md        design north star (§13 = original v1 scope cuts)
+docs/VISUAL_PLAYBOOK.md    researched visual techniques + grade settings
 ```
 
 ### Data flow
@@ -101,117 +122,118 @@ Cloud Functions ──writes──▶ Firestore ──onSnapshot──▶ fireba
                                                                         ├──▶ gameStore ──▶ three/* + ui/*
 localStorage ◀──persist── demoAdapter ◀──completeQuest()── QuestJournal ┘
                                 │
-                                └──enqueueCelebration()──▶ CelebrationDirector
-                                                           (camera + FX + SFX,
-                                                            then endCelebration)
+                                └──enqueueCelebration(rain?, quest, levelup?)──▶ CelebrationDirector
 ```
 
-- **Celebrations** are a queue on the store. Adapters enqueue; the
-  `CelebrationDirector` (r3f) pops one at a time, runs the timeline
-  (~3.2 s quest / ~4.5 s level-up), fires `requestFocus` for the camera and
-  `aisleland-sfx` events for audio, then calls `endCelebration()`.
-- **Audio/visual decoupling**: anything can play a sound by dispatching
-  `window.dispatchEvent(new CustomEvent('aisleland-sfx', {detail:{name}}))`.
-  Canonical names live in `src/audio/SoundManager.ts` (`SFX_NAMES`).
+- **Celebrations** are a FIFO queue on the store. Adapters enqueue (the rain
+  ritual, when due, is enqueued *before* its quest event); the
+  `CelebrationDirector` pops one at a time, runs the timeline (3.2 s quest /
+  4.5 s level-up / 4.2 s rain), drives camera focus + SFX, then
+  `endCelebration()`.
+- **Audio decoupling**: anything plays a sound via
+  `window.dispatchEvent(new CustomEvent('aisleland-sfx', {detail:{name}}))`;
+  canonical names in `src/audio/SoundManager.ts`.
+- **Quest arrival is physical**: `world/Mailbox.tsx` subscribes to the quest
+  list; a fresh quest id triggers the owl flight + `owl_delivery` SFX, and
+  the mailbox flag eases up while `quests.length > 0`. `ToastHost` still
+  shows the textual toast (suppressed in photo mode).
 
 ## 4. Critical invariants — do not break these
 
 1. **Legacy asset-type ids are the save format.** The Cloud Function writes
-   `islands/{uid}/assets` docs with types like `flower-1`, `tree-3`,
-   `small-house`, `windmill-2` on an **8×7 grid** (`gridX`, `gridY`).
-   `src/three/coords.ts` (`gridToWorld`, `isInClearing`) and
-   `functions/src/island-manager.ts` (`isInClearing`) must stay consistent.
-   Every type in `LEVEL_UNLOCKS` must have a recipe in
-   `src/three/props/recipes.ts` (unknown types render a gift box).
-2. **`terrainHeight` is voxel-quantized and shared.** The voxel mesher
-   (`world/voxelIsland.ts`), prop placement, critters, grass scatter and
-   celebration FX all call `coords.terrainHeight`. If you change the terrain
-   shape, change it **only** there (smoothHeight/boundaryRadius/isWaterChannel)
-   — the mesh and all standing objects will follow automatically.
-3. **The stream is carved terrain.** `WATERFALL_AZIMUTHS` + `isWaterChannel`
-   in coords.ts drive: the carved channel in the voxel mesh, the recessed
-   stream bed (−1 voxel), the waterfall sheet anchors, and placement
-   exclusions (demo adapter + grass tufts). Keep them in lockstep.
-4. **One material family.** All solid meshes use `makeMeringue()` from
-   `three/materials.ts` (multi-hue via vertex colors, ideally merged into few
-   draw calls). It bakes in the toon ramp, rim light and the curved-world
-   vertex bend. Custom ShaderMaterials (sky, sea, waterfall) are the exception
-   and must include tonemapping/colorspace chunks.
-5. **Island bob is deterministic.** Everything that "rides" the island applies
-   `islandBob(clock.elapsedTime)` from `three/islandMotion.ts` independently —
-   never couple modules by importing runtime values across them.
-6. **`timeOfDay ∈ [0,1)`** (0 = midnight, 0.5 = noon) drives *everything*
-   (sky, lights, lamps, fireflies, ambience). Read via
-   `effectiveTimeOfDay(state)` so the photo-mode override works. Demo mode
-   loops a day in 6 min (`ClockSync` in IslandScene).
-7. **Adapters own session lifecycle.** Only `App.tsx`'s `onAuthChange`
-   listener creates the firebase adapter (guarded by a `connecting` ref);
-   `startSession` disposes any adapter it replaces; `dispose()` must clean up
-   every subscription **and timer**. This was the worst bug class found in
-   review — keep it tight.
-8. **No allocations in `useFrame`.** Use module-level scratch
-   Vector3/Color/Euler/Matrix4. Pooled FX (confetti, dust, motes) are reused,
-   never recreated.
+   `islands/{uid}/assets` with types like `flower-1`, `small-house` on an
+   **8×7 grid**. `coords.ts` and `functions/src/island-manager.ts` share the
+   clearing math. Every type in `LEVEL_UNLOCKS` must have a recipe in
+   `props/recipes.ts` (unknown → gift box).
+2. **`terrainHeight` is voxel-quantized and shared.** The voxel mesher, prop
+   placement, critters, wildlife perch points, grass scatter and celebration
+   FX all read `coords.terrainHeight`. Change terrain shape ONLY via
+   `smoothHeight`/`boundaryRadius`/`isWaterChannel` in coords.ts — mesh and
+   everything standing on it follow automatically.
+3. **The creek is carved terrain.** `WATERFALL_AZIMUTHS` + `isWaterChannel`
+   (which includes the spring-pond widening on channel 0) drive: the carved
+   voxel channel, the recessed bed (−1 voxel), waterfall sheet anchors, the
+   StreamFlow ribbon path, duck swim paths, and placement exclusions (demo
+   adapter + grass tufts). One source of truth; keep it that way.
+4. **One material family.** All solid meshes use `makeMeringue()` (hues via
+   vertex colors; share instances). Custom ShaderMaterials (sky, sea,
+   waterfall, stream) must include tonemapping/colorspace chunks.
+5. **Island bob is deterministic.** Everything riding the island applies
+   `islandBob(clock.elapsedTime)` independently — never share runtime refs
+   across modules.
+6. **`timeOfDay ∈ [0,1)`** drives everything (sky, lights, lamps, fireflies,
+   ambience, wildlife visibility, balloon/star schedules). Read via
+   `effectiveTimeOfDay(state)` so photo-mode override works.
+7. **Adapters own session lifecycle.** Only App.tsx's `onAuthChange` listener
+   creates the firebase adapter (guarded by `connecting` ref); `startSession`
+   disposes any adapter it replaces; `dispose()` must clear every
+   subscription **and timer**. Worst historical bug class — keep it tight.
+8. **No allocations in `useFrame`.** Module-level scratch vectors; pooled FX
+   only. New celebration kinds must hide their meshes in `hideAll()`.
+9. **Species additions**: extend `CritterSpecies` + `CRITTER_SPECIES`
+   (types.ts), `SPECIES` spec (Critters.tsx), `CRITTER_NAMES` (+ demo bonus
+   table if demo-grantable) in demoAdapter. Do NOT add client-only species to
+   `LEVEL_UNLOCKS` — the firebase level-up banner diffs that table and the
+   server will never grant them.
+10. **Timeline code uses one clock.** r3f `clock.elapsedTime` and
+    `performance.now()` are different bases — never mix them in one timeline
+    (the wish-star click stamps via a pending flag consumed in useFrame; the
+    critter jump queue does the same).
 
-## 5. Verification workflow (how this was QA'd)
+## 5. Verification workflow (how this is QA'd)
 
 - **Static**: `npx tsc --noEmit -p tsconfig.app.json && npx eslint src scripts && npm run build`.
-- **Visual**: run the dev server, then drive headless Chromium with Playwright
-  (software GL flags: `--use-gl=angle --use-angle=swiftshader
-  --enable-unsafe-swiftshader --no-sandbox`) — screenshot the login, demo
-  island, journal, a quest completion mid-celebration, and photo-mode at
-  t=0.5 / 0.72 / 0.9. Inject a maxed demo save into localStorage
-  (`aisleland-demo-v2`, level 10 + all prop types + critters) to review every
-  asset at once. Judge the screenshots against `docs/VISUAL_PLAYBOOK.md`.
-- **Flow**: click "Try the demo island" → complete a quest → assert
-  localStorage XP/streak/quests changed and the HUD updated.
-- Playwright launches a fresh browser profile each run, so localStorage does
-  **not** persist across script runs — don't mistake that for a save bug.
+- **Visual**: dev server + Playwright headless Chromium (flags:
+  `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader
+  --no-sandbox`). Inject a maxed save into localStorage
+  (`aisleland-demo-v2`: level 10, all prop types, all species) to review
+  everything at once; screenshot day/golden/night via the photo-mode slider.
+- **Event timing**: headless rendering is slow and skews fixed sleeps — for
+  timeline features (celebrations, owl), poll the DOM (overlay classes, the
+  journal badge) and screenshot on state change instead of sleeping.
+  Playwright uses a fresh profile per launch, so localStorage never persists
+  across runs — that is not a save bug.
+- **Downloads** (postcard): `page.waitForEvent('download')` → `saveAs` →
+  inspect the PNG.
 
 ## 6. Known issues & sharp edges
 
 | # | Issue | Notes |
 |---|---|---|
-| 1 | **Server placement ignores the stream.** `functions/src/island-manager.ts` scans the grid row-major and can place a reward on water-channel cells (near grid (7,0)/(0,6)). | Mirror `isWaterChannel` in the function, or reorder its scan. Demo mode already excludes the stream. |
-| 2 | Level-up celebration can play **before** its quest celebration in firebase mode (island snapshot enqueues immediately; the quest celebration waits 1.8 s for the asset write). | Cosmetic. Fix: delay level-up enqueue or sequence by quest id. |
-| 3 | Postcard export is canvas-resolution PNG, not the 1080×1350 framed postcard from the design doc (§11). CSS film filters *are* re-applied via `ctx.filter`. | Design doc §13 lists this as deferred. |
-| 4 | Toasts ("New quest") still render in photo mode and can photobomb. | Gate `ToastHost` on `!photoMode`. |
-| 5 | Critter hover sets `document.body.style.cursor` without unmount cleanup (low; from review). | One-line `useEffect` cleanup if it ever bites. |
-| 6 | Console deprecation warnings from three r18x: `THREE.Clock` (r3f internal) and `PCFSoftShadowMap`. Harmless; shadows silently fall back to PCF. | Revisit when bumping three/r3f. |
-| 7 | Ambient audio quality is synth-only until `npm run sfx` is run with an ElevenLabs key; generated files land in `public/audio/` and take priority automatically. | Loops aren't gapless-verified — check `ambient_*` seams after generating. |
-| 8 | `functions/` were **not touched** in this revamp (except being read). They compile under their own tsconfig; treat them as legacy-stable. | Rate limit: 1 completion per source per 5 min (`complete-quest.ts`). |
-| 9 | The grass-tuft cones read slightly non-voxel against the new terrain. | Candidate: swap `tuftGeometry` for tiny voxel crosses. |
+| 1 | **Server placement ignores the creek.** `functions/src/island-manager.ts` scans row-major and can drop a reward on water cells (near grid (7,0)/(0,6)). | Mirror `isWaterChannel` in the function. Demo mode already excludes water. |
+| 2 | Rain ritual + level-up + quest can queue back-to-back on a big day — order is rain → quest → levelup (level-up may still slip first in firebase mode since it comes from the island snapshot while the quest waits 1.8 s for the asset write). | Cosmetic; sequence by quest id if it bothers. |
+| 3 | Wish-star grants no XP (visual + sound only) — the adapters expose no client-side XP hook. | Add `adapter.grantBonusXp?(n)` if wanted (demo trivial; firebase needs a callable). |
+| 4 | Critter hover sets `document.body.style.cursor` without unmount cleanup (low). | One-line `useEffect` cleanup if it bites. |
+| 5 | three r18x deprecation warnings (`THREE.Clock`, `PCFSoftShadowMap`) — harmless; shadows fall back to PCF. | Revisit on the next three/r3f bump. |
+| 6 | Synth-only audio until `npm run sfx` runs with an ElevenLabs key; generated `ambient_*` loop seams unverified. | Files in `public/audio/` auto-take priority. |
+| 7 | `functions/` untouched by the revamp; treat as legacy-stable. Rate limit: 1 completion per source per 5 min. | |
+| 8 | Owl/mailbox sit at a fixed meadow spot (−4.2, 8.6). If terrain near there changes, re-check `terrainHeight` puts them on land. | |
+| 9 | Wildlife counts are fixed (2 ducks / 3 birds / 2 gulls / 2 bees) with no quality-tier gating — fine on current budgets (~10 extra draw calls). | Gate on `store.quality` if mobile perf ever hurts. |
 
-## 7. Where the vision lives / roadmap
+## 7. Roadmap (in value order)
 
-- `docs/GAME_DESIGN.md` — the north star. Since the initial v1 scope cut
-  (§13), the following have SHIPPED: owl mail delivery + mailbox (flag up
-  while quests wait, click opens the journal), morning-rain streak ritual
-  (rain + pastel rainbow on the first completion of each day, both modes),
-  ambient micro-events (day hot-air balloon, night shooting star with a
-  click-to-wish burst), creek pond + arched bridge + animated stream surface,
-  island naming (HUD click-to-edit, persisted), framed 1080×1350 postcard
-  export with film filter + level stamp + caption, and an opening camera
-  reveal. Still open, roughly in value order:
-  1. **Critter friendship/affinity** (cat→gmail etc., heart levels — needs a
-     small server schema addition; "do my email" becomes "feed my cat")
-  2. **Pocket + seed-toss placement** (player-controlled planting)
-  3. **Sunday Postcard Retro** (weekly auto-tour + shareable stat card)
-  4. Share prompt auto-fired after level-ups; wish → +XP through the adapter
-- `docs/VISUAL_PLAYBOOK.md` — remaining un-applied polish items: height-fog
-  shader patch, god-ray cones at golden hour, paper-grain finishing effect,
-  pitch-adaptive world curve, per-instance hue jitter on props.
-- Visual upgrade candidates from the latest voxel pass: animated stream
-  surface (scrolling foam), voxel-styled buildings, a pond at the stream
-  source, a small bridge prop over the creek.
+Shipped since the original design-doc scope cut (§13): owl mail + mailbox,
+morning-rain streak ritual, ambient micro-events (balloon, wish-star),
+creek pond + bridge + animated stream, ambient wildlife (ducks, songbirds,
+gulls, fish, bees), 4 new companion species + starter buddy + spontaneous
+emotes, island naming, framed postcard export, opening camera reveal.
+
+Still open:
+1. **Critter friendship/affinity** (cat→gmail etc., heart levels; "do my
+   email" becomes "feed my cat") — needs a small server schema addition.
+2. **Pocket + seed-toss placement** (player-controlled planting).
+3. **Sunday Postcard Retro** (weekly auto-tour + shareable stat card).
+4. Share prompt auto-fired after level-ups; wish-star → real +XP.
+5. Remaining VISUAL_PLAYBOOK items: height-fog patch, golden-hour god rays,
+   paper-grain finishing effect, per-instance prop hue jitter.
+6. Critter nameplates on hover (names exist in data, unseen in game).
 
 ## 8. Git & process notes
 
-- Work happens on `claude/workspace-game-3d-revamp-i7e3zz`; `main` still holds
-  the pre-revamp 2D app. No PR has been opened yet.
-- History is structured in reviewable slices: foundation → world/props →
-  critters/fx/ui/audio → visual polish → review fixes → local-dev setup →
-  voxel restyle. `git log --oneline` is the change narrative.
-- The multi-agent build contracts (module boundaries, exports) used during
-  development are baked into this doc's §3–4; the design/playbook docs are the
-  only other institutional memory that matters.
+- Work lives on `claude/workspace-game-3d-revamp-i7e3zz`; `main` still holds
+  the pre-revamp 2D app. No PR opened yet.
+- History is reviewable slices — `git log --oneline` reads as the project
+  narrative (foundation → modules → polish → review fixes → voxel restyle →
+  living-world → living-island).
+- Institutional memory: this file + `docs/GAME_DESIGN.md` +
+  `docs/VISUAL_PLAYBOOK.md`.
